@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <unordered_map>
 
+
 namespace dropclone {
 
 namespace fs = std::filesystem;
@@ -14,6 +15,10 @@ struct file_info {
 
   auto operator==(file_info const&) const -> bool = default;
 };
+
+using file_snapshot = std::unordered_map<fs::path, file_info>;
+
+auto hash_snaphot(file_snapshot const&) noexcept -> size_t;
 
 } // dropclone
 
@@ -33,3 +38,4 @@ template <> struct hash<dropclone::file_info> {
 };
 
 } // std
+
