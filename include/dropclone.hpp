@@ -1,0 +1,1 @@
+static inline int glob = 77;
