@@ -1,7 +1,7 @@
 #include <iostream>
 #include <filesystem>
 #include <cstdlib>
-#include <dropclone.hpp>
+#include <clone_manager.hpp>
 
 auto main(int argc, char const* argv[]) -> int {
   namespace fs = std::filesystem;
@@ -9,8 +9,8 @@ auto main(int argc, char const* argv[]) -> int {
 
   std::cout << fs::current_path() << '\n';
   fs::path p{"dropclone"};
-  dc::file_info fi{fs::last_write_time(p), fs::file_size(p), fs::status(p).permissions()};
-  std::cout << std::hash<dc::file_info>{}(fi) << '\n';
+  dc::path_info fi{fs::last_write_time(p), fs::file_size(p), fs::status(p).permissions()};
+  std::cout << std::hash<dc::path_info>{}(fi) << '\n';
   
   return EXIT_SUCCESS;
 }

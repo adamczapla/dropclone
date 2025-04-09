@@ -3,29 +3,24 @@
 #include <filesystem>
 #include <unordered_map>
 
-
 namespace dropclone {
 
 namespace fs = std::filesystem;
-
-struct file_info {
+  
+struct path_info {
   fs::file_time_type last_write_time{};
   uintmax_t file_size{};
   fs::perms file_perms{};
-
-  auto operator==(file_info const&) const -> bool = default;
+  
+  auto operator==(path_info const&) const -> bool = default;
 };
-
-using file_snapshot = std::unordered_map<fs::path, file_info>;
-
-auto hash_snaphot(file_snapshot const&) noexcept -> size_t;
-
-} // dropclone
-
+  
+} // namespace dropclone
+  
 namespace std {
-
-template <> struct hash<dropclone::file_info> {
-  auto operator()(dropclone::file_info const& info) const noexcept -> size_t {
+  
+template <> struct hash<dropclone::path_info> {
+  auto operator()(dropclone::path_info const& info) const noexcept -> size_t {
     size_t seed{0};
     auto hasher = [&](auto const& hash_value) -> size_t {
       return hash_value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
@@ -36,6 +31,5 @@ template <> struct hash<dropclone::file_info> {
     return seed;
   }
 };
-
-} // std
-
+  
+} // namespace std
