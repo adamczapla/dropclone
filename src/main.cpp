@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <clone_manager.hpp>
 #include <nlohmann/json.hpp>
+#include <spdlog/spdlog.h>
 
 auto main(int argc, char const* argv[]) -> int {
   namespace fs = std::filesystem;
