@@ -8,3 +8,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   ${PROJECT_SOURCE_DIR}/include
   ${PROJECT_SOURCE_DIR}/external
 )
+
+target_precompile_headers(${PROJECT_NAME} PRIVATE
+  <nlohmann/json.hpp>
+)
