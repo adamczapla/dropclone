@@ -8,9 +8,9 @@ namespace dropclone {
 
 namespace fs = std::filesystem;
 
-struct clone_entry { };
+struct config_entry { };
 
-using clone_config = std::vector<clone_entry>;
+using clone_config = std::vector<config_entry>;
 using config_parser = std::function<clone_config(fs::path const&)>;
   
 } // namespace dropclone
