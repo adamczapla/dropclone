@@ -1,16 +1,21 @@
 #pragma once
 
-#include <clone_manager.hpp>
+// #include <clone_manager.hpp>
 #include <clone_config.hpp>
+#include <filesystem>
 
 namespace dropclone {
 
+namespace fs = std::filesystem;
+
 class drop_clone {
  public:
-  explicit drop_clone(config_parser) noexcept;
+  drop_clone(fs::path config_path, config_parser) noexcept;
 
  private:
-  config_parser parser_;
+  fs::path config_path_; // maybe i'll remove it later
+  config_parser parser_; // maybe i'll remove it later
+  clone_config clone_config_;
 };
   
 } // namespace dropclone
