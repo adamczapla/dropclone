@@ -4,7 +4,6 @@
 #include <filesystem>
 #include <unordered_map>
 
-
 namespace dropclone {
 
 namespace fs = std::filesystem;
