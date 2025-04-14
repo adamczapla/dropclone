@@ -3,6 +3,7 @@
 #include <nlohmann/json.hpp>
 #include <parsers/nlohmann_json_parser.hpp>
 #include <exception.hpp>
+#include <errorcode.hpp>
 #include <clone_config.hpp>
 #include <filesystem>
 #include <fstream>
@@ -17,10 +18,9 @@ auto nlohmann_json_parser::operator()(fs::path config_path) -> clone_config {
   std::ifstream istrm_config{config_path}; 
 
   if(!istrm_config.is_open()) { 
-    throw dropclone::exception{
-      errorcode::config::file_not_found,
-      "cannot open config file: " + config_path.string() 
-    };
+    throw_exception<errorcode::config>(
+      errorcode::config::file_not_found, config_path.string()
+    );
   }
 
   json json_config{};
@@ -28,10 +28,9 @@ auto nlohmann_json_parser::operator()(fs::path config_path) -> clone_config {
   try {
     json_config = json::parse(istrm_config);
   } catch (json::parse_error const& e) {
-    throw dropclone::exception{
-      errorcode::config::file_not_found,
-      e.what()
-    };
+    throw_exception<errorcode::config>(
+      errorcode::config::parse_error, e.what()
+    );
   }
 
   clone_config config{};
@@ -46,10 +45,9 @@ auto nlohmann_json_parser::operator()(fs::path config_path) -> clone_config {
       );
     }
   } catch (json::exception const& e) {
-    throw dropclone::exception{
-      errorcode::config::conversion_error,
-      e.what()
-    };
+    throw_exception<errorcode::config>(
+      errorcode::config::conversion_error, e.what()
+    );
   }
 
   return config;

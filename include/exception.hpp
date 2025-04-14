@@ -1,25 +1,9 @@
 #pragma once
 
+#include <errorcode.hpp>
 #include <stdexcept>
-#include <string>
 #include <string_view>
-
-namespace dropclone::errorcode {
-
-namespace config { 
-  inline constexpr auto file_not_found            = "config_error.001";
-  inline constexpr auto parse_error               = "config_error.002";
-  inline constexpr auto conversion_error          = "config_error.003";
-  inline constexpr auto path_not_absolute         = "config_error.004";
-  inline constexpr auto invalid_clone_mode        = "config_error.005";
-  inline constexpr auto overlapping_path_conflict = "config_error.005";
-
-} // namespace dropclone::errorcode::config
-
-namespace filesystem {} // namespace dropclone::errorcode::filesystem
-/* namespace ... */
-
-} // namespace dropclone::errorcode
+#include <string>
 
 namespace dropclone {
 
@@ -29,11 +13,17 @@ class exception : public std::runtime_error {
     : std::runtime_error{format(error_code, error_message)}
   {}
 
-  inline auto format(std::string_view error_code, std::string_view error_message) -> std::string;
+ private:
+  auto format(std::string_view error_code, std::string_view error_message) -> std::string {
+    return std::string{"[dropclone.exception."}.append(error_code).append("] ").append(error_message);
+  }
 };
 
-auto exception::format(std::string_view error_code, std::string_view error_message) -> std::string {
-  return std::string{"[dropclone.exception."}.append(error_code).append("] ").append(error_message);
+template <typename error_type, typename... Args>
+auto throw_exception(std::string_view error_code, Args&&... args) {
+  throw exception{
+    error_code, errorcode::formatter<error_type>::format(error_code, std::forward<Args>(args)...)
+  };
 }
 
 } // namespace dropclone
