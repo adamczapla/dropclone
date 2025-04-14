@@ -5,7 +5,6 @@
 #include <functional>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <vector>
 #include <unordered_map>
 #include <ostream>
@@ -17,7 +16,6 @@ namespace fs = std::filesystem;
 enum class clone_mode { copy, move, undefined };
 
 auto operator<<(std::ostream&, clone_mode const&) -> std::ostream&;
-// auto operator==(clone_mode const& lhs, clone_mode const& rhs) -> bool;
 
 NLOHMANN_JSON_SERIALIZE_ENUM(clone_mode, {
   {clone_mode::undefined, "undefined"},
@@ -31,13 +29,13 @@ struct config_entry {
   clone_mode mode{};
   bool recursive{true};
   // + exclude_patterns as regular expression
-  auto sanitize() -> std::optional<std::string_view>;
+  auto sanitize() -> void;
 };
 
 class clone_config {
  public:
   std::vector<config_entry> entries{};
-  auto validate() const -> std::optional<std::string>;
+  auto validate() const -> void; 
 
  private:
   struct path_node {
