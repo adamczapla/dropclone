@@ -16,12 +16,20 @@ struct config {
   static constexpr auto overlapping_path_conflict = "config_error.006";
   
   static inline std::unordered_map<std::string_view, std::string_view> const error_messages{
-    {std::string_view{file_not_found}, "cannot open config file: {}"},
-    {std::string_view{parse_error}, "parser error: {}"},
-    {std::string_view{conversion_error}, "conversion error: {}"},
-    {std::string_view{path_not_absolute}, "'{}' must be an absolte path"},
-    {std::string_view{invalid_clone_mode}, "'{}' must be (copy or move)"},
-    {std::string_view{overlapping_path_conflict}, "Overlapping path detected in '{}': {}"}
+    {std::string_view{file_not_found}, "cannot open config file: {}\n"},
+    {std::string_view{parse_error}, "could not parse config file {} |\n↳ origin error: \n\t↳ {}\n"},
+    {std::string_view{conversion_error}, "conversion error |\n↳ origin error: \n\t↳ {}\n"},
+    {std::string_view{path_not_absolute}, "'{}' must be an absolte path\n"},
+    {std::string_view{invalid_clone_mode}, "'{}' must be (copy or move)\n"},
+    {std::string_view{overlapping_path_conflict}, "Overlapping path detected in '{}': {}\n"}
+  };
+};
+
+struct filesystem {
+  static constexpr auto could_not_create_directory = "filesystem_error.001";
+  
+  static inline std::unordered_map<std::string_view, std::string_view> const error_messages{
+    {std::string_view{could_not_create_directory}, "could not create directory: {} |\n↳ origin error: \n\t↳ {}\n"}
   };
 };
 
