@@ -13,6 +13,7 @@ drop_clone::drop_clone(fs::path config_path, config_parser parser) noexcept
   try {
     clone_config_ = parser_(config_path_);
     for (auto& entry : clone_config_.entries) { entry.sanitize(); }
+    clone_config_.sanitize(config_path_);
     clone_config_.validate();
   } catch (dropclone::exception const& e) {
     std::cerr << e.what();
