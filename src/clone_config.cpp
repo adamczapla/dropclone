@@ -8,6 +8,8 @@
 #include <unordered_map>
 #include <ostream>
 
+#include <iostream>
+
 namespace dropclone {
 
 namespace fs = std::filesystem;
@@ -73,6 +75,23 @@ auto clone_config::validate() const -> void {
         "destination_directory", entry.destination_directory.string()
       );
     }
+  }
+}
+
+auto clone_config::sanitize(fs::path const& config_path) -> void {
+  log_directory = log_directory.lexically_normal(); 
+  try { 
+    if (!log_directory.is_absolute()) { 
+      log_directory = config_path.parent_path() /
+        (log_directory.empty() ? fs::path{"log"} : log_directory);
+    }
+    fs::create_directories(log_directory);
+  } catch (fs::filesystem_error const& e) {
+    throw_exception<errorcode::filesystem>(
+      errorcode::filesystem::could_not_create_directory,
+      log_directory.string(),
+      e.what()
+    );
   }
 }
 
