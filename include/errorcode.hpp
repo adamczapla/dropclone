@@ -33,6 +33,14 @@ struct filesystem {
   };
 };
 
+struct logger {
+  static constexpr auto logger_id_not_found = "logger_error.001";
+
+  static inline std::unordered_map<std::string_view, std::string_view> const error_messages{
+    {std::string_view{logger_id_not_found}, "logger_id '{}' not registered – using 'console' logger as fallback.\n"}
+  };
+};
+
 template <typename error_type>
 struct formatter {
   static std::string format(std::string_view code, auto const&... args) {
