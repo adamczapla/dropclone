@@ -1,6 +1,7 @@
 #pragma once
 
 #include <errorcode.hpp>
+#include <utility.hpp>
 #include <stdexcept>
 #include <string_view>
 #include <string>
@@ -22,7 +23,7 @@ class exception : public std::runtime_error {
 template <typename error_type, typename... Args>
 auto throw_exception(std::string_view error_code, Args&&... args) {
   throw exception{
-    error_code, errorcode::formatter<error_type>::format(error_code, std::forward<Args>(args)...)
+    error_code, utility::formatter<error_type>::format(error_code, std::forward<Args>(args)...)
   };
 }
 
