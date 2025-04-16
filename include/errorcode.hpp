@@ -1,9 +1,7 @@
 #pragma once
 
 #include <unordered_map>
-#include <format>
 #include <string_view>
-#include <string>
 
 namespace dropclone::errorcode {
 
@@ -14,22 +12,24 @@ struct config {
   static constexpr auto path_not_absolute         = "config_error.004";
   static constexpr auto invalid_clone_mode        = "config_error.005";
   static constexpr auto overlapping_path_conflict = "config_error.006";
+  static constexpr auto path_not_configured       = "config_error.007";
   
-  static inline std::unordered_map<std::string_view, std::string_view> const error_messages{
-    {std::string_view{file_not_found}, "cannot open config file: {}\n"},
-    {std::string_view{parse_error}, "could not parse config file {} |\n↳ origin error: \n\t↳ {}\n"},
-    {std::string_view{conversion_error}, "conversion error |\n↳ origin error: \n\t↳ {}\n"},
-    {std::string_view{path_not_absolute}, "'{}' must be an absolte path\n"},
-    {std::string_view{invalid_clone_mode}, "'{}' must be (copy or move)\n"},
-    {std::string_view{overlapping_path_conflict}, "Overlapping path detected in '{}': {}\n"}
+  static inline std::unordered_map<std::string_view, std::string_view> const messages{
+    {file_not_found, "cannot open config file: {}"},
+    {parse_error, "could not parse config file {} |\n↳ origin error: \n\t↳ {}"},
+    {conversion_error, "conversion error |\n↳ origin error: \n\t↳ {}"},
+    {path_not_absolute, "'{}' must be an absolte path"},
+    {invalid_clone_mode, "'{}' must be (copy or move)"},
+    {overlapping_path_conflict, "Overlapping path detected in '{}': {}"},
+    {path_not_configured, "{} path is not configured or not absolute – using fallback: '{}'"}
   };
 };
 
 struct filesystem {
   static constexpr auto could_not_create_directory = "filesystem_error.001";
   
-  static inline std::unordered_map<std::string_view, std::string_view> const error_messages{
-    {std::string_view{could_not_create_directory}, "could not create directory: {} |\n↳ origin error: \n\t↳ {}\n"}
+  static inline std::unordered_map<std::string_view, std::string_view> const messages{
+    {could_not_create_directory, "could not create directory: {} |\n↳ origin error: \n\t↳ {}"}
   };
 };
 
@@ -37,9 +37,9 @@ struct logger {
   static constexpr auto logger_id_not_found   = "logger_error.001";
   static constexpr auto initialization_failed = "logger_error.002";
 
-  static inline std::unordered_map<std::string_view, std::string_view> const error_messages{
-    {std::string_view{logger_id_not_found}, "logger_id '{}' not registered – using 'core' logger as fallback.\n"},
-    {std::string_view{initialization_failed}, "Failed to initialize logger {} |\n↳ origin error:\n\t↳ {}"}
+  static inline std::unordered_map<std::string_view, std::string_view> const messages{
+    {logger_id_not_found, "logger_id '{}' not registered – using 'core' logger as fallback."},
+    {initialization_failed, "Failed to initialize logger {} |\n↳ origin error:\n\t↳ {}"}
   };
 };
 
@@ -47,29 +47,10 @@ struct system {
   static constexpr auto unhandled_std_exception = "system_error.001";
   static constexpr auto unknown_fatal_error     = "system_error.002";
 
-  static inline std::unordered_map<std::string_view, std::string_view> const error_messages{
+  static inline std::unordered_map<std::string_view, std::string_view> const messages{
     {unhandled_std_exception, "Unhandled std::exception occurred |\n↳ origin error:\n\t↳ {}"},
     {unknown_fatal_error, "Unknown fatal error occurred – possible internal crash or signal"}
   };
-};
-
-template <typename error_type>
-struct formatter {
-  static std::string format(std::string_view code, auto const&... args) {
-    try {
-      return std::vformat(error_type::error_messages.at(code), 
-                          std::make_format_args(args...));
-    } catch (std::format_error const& e) {
-      return std::string{"[format_error: "}
-              .append(e.what())
-              .append("] for code ")
-              .append(code);
-    } catch (std::out_of_range const&) {
-      return std::string{"[missing_error_code: "}
-              .append(code)
-              .append("]");
-    }
-  }
 };
   
 } // namespace dropclone::errorcode
