@@ -34,10 +34,22 @@ struct filesystem {
 };
 
 struct logger {
-  static constexpr auto logger_id_not_found = "logger_error.001";
+  static constexpr auto logger_id_not_found   = "logger_error.001";
+  static constexpr auto initialization_failed = "logger_error.002";
 
   static inline std::unordered_map<std::string_view, std::string_view> const error_messages{
-    {std::string_view{logger_id_not_found}, "logger_id '{}' not registered – using 'console' logger as fallback.\n"}
+    {std::string_view{logger_id_not_found}, "logger_id '{}' not registered – using 'core' logger as fallback.\n"},
+    {std::string_view{initialization_failed}, "Failed to initialize logger {} |\n↳ origin error:\n\t↳ {}"}
+  };
+};
+
+struct system {
+  static constexpr auto unhandled_std_exception = "system_error.001";
+  static constexpr auto unknown_fatal_error     = "system_error.002";
+
+  static inline std::unordered_map<std::string_view, std::string_view> const error_messages{
+    {unhandled_std_exception, "Unhandled std::exception occurred |\n↳ origin error:\n\t↳ {}"},
+    {unknown_fatal_error, "Unknown fatal error occurred – possible internal crash or signal"}
   };
 };
 
