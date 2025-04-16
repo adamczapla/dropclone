@@ -1,6 +1,8 @@
 #include <clone_config.hpp>
+#include <logger_manager.hpp>
 #include <exception.hpp>
 #include <errorcode.hpp>
+#include <utility.hpp>
 #include <string>
 #include <string_view>
 #include <optional>
@@ -84,6 +86,12 @@ auto clone_config::sanitize(fs::path const& config_path) -> void {
     if (!log_directory.is_absolute()) { 
       log_directory = config_path.parent_path() /
         (log_directory.empty() ? fs::path{"log"} : log_directory);
+
+      logger.get(logger_id::startup)->warn(
+        utility::formatter<errorcode::config>::format(
+          errorcode::config::path_not_configured,
+          "log_directory", log_directory.string()
+      ));
     }
     fs::create_directories(log_directory);
   } catch (fs::filesystem_error const& e) {
