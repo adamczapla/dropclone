@@ -7,6 +7,7 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include "spdlog/sinks/rotating_file_sink.h"
 #include <errorcode.hpp>
+#include <utility.hpp>
 #include <unordered_map>
 #include <memory>
 #include <utility>
@@ -50,7 +51,7 @@ class logger_manager {
       return loggers_.at(id);
     } catch (std::out_of_range const& e) {
       core_logger_->warn(
-        errorcode::formatter<errorcode::logger>::format(
+        utility::formatter<errorcode::logger>::format(
           errorcode::logger::logger_id_not_found, to_string(id)
         )
       );
