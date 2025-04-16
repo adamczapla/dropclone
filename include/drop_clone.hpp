@@ -10,7 +10,7 @@ namespace fs = std::filesystem;
 
 class drop_clone {
  public:
-  drop_clone(fs::path config_path, config_parser) noexcept;
+  drop_clone(fs::path config_path, config_parser);
 
  private:
   auto init_startup_logger() -> void;
