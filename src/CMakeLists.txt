@@ -1,17 +1,17 @@
 
-add_executable(${PROJECT_NAME} 
-  main.cpp
+add_library(dropclone_lib STATIC 
+  run_main.cpp
   drop_clone.cpp
   clone_manager.cpp
   clone_config.cpp
   parsers/nlohmann_json_parser.cpp
 )
 
-target_include_directories(${PROJECT_NAME} PRIVATE 
+target_include_directories(dropclone_lib PUBLIC 
   ${PROJECT_SOURCE_DIR}/include
   ${PROJECT_SOURCE_DIR}/external
 )
 
-# target_precompile_headers(${PROJECT_NAME} PRIVATE
-#   <nlohmann/json.hpp>
-# )
+add_executable(dropclone bootstrap.cpp)
+
+target_link_libraries(dropclone PRIVATE dropclone_lib)
