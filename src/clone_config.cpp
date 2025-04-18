@@ -87,7 +87,7 @@ auto clone_config::sanitize(fs::path const& config_path) -> void {
       log_directory = config_path.parent_path() /
         (log_directory.empty() ? fs::path{"log"} : log_directory);
 
-      logger.get(logger_id::startup)->warn(
+      logger.get(logger_id::config)->warn(
         utility::formatter<errorcode::config>::format(
           errorcode::config::path_not_configured,
           "log_directory", log_directory.string()

@@ -15,13 +15,13 @@
 
 namespace dropclone {
 
-enum class logger_id { core, startup, task, daemon };
+enum class logger_id { core, config, startup, daemon };
 
 inline auto to_string(logger_id id) -> std::string {
   switch (id) {
     case logger_id::core:     return "core"; 
+    case logger_id::config:   return "config";  
     case logger_id::startup:  return "startup"; 
-    case logger_id::task:     return "task";  
     case logger_id::daemon:   return "daemon";
   }
   return "unknown";
@@ -29,10 +29,12 @@ inline auto to_string(logger_id id) -> std::string {
 
 class logger_manager {
  public:
+  static inline auto const default_pattern{"[%Y-%m-%d %H:%M:%S.%e] [%n] [%^%l%$] %v"};
+
   logger_manager() : core_logger_{
     [] {
       auto sink = std::make_shared<spdlog::sinks::stdout_color_sink_st>();
-      sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] [%^%l%$] %v");
+      sink->set_pattern(default_pattern);
       sink->set_level(spdlog::level::trace);
       auto logger = std::make_shared<spdlog::logger>(to_string(logger_id::core), sink);
       logger->set_level(spdlog::level::info);
