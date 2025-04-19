@@ -12,6 +12,7 @@ FetchContent_MakeAvailable(Catch2)
 
 add_executable(dropclone_tests 
   config_entry_test.cpp
+  clone_config_test.cpp
 )
 
 target_link_libraries(dropclone_tests PRIVATE dropclone_lib Catch2::Catch2WithMain)
