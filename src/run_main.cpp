@@ -1,8 +1,7 @@
-#include <drop_clone.hpp>
-#include <logger_manager.hpp>
-#include <exception.hpp>
-#include <parsers/nlohmann_json_parser.hpp>
-
+#include <dropclone/drop_clone.hpp>
+#include <dropclone/logger_manager.hpp>
+#include <dropclone/exception.hpp>
+#include <dropclone/nlohmann_json_parser.hpp>
 #include <iostream>
 #include <filesystem>
 #include <cstdlib>

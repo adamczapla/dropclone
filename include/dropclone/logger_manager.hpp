@@ -2,8 +2,8 @@
 
 #include <spdlog/logger.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include <errorcode.hpp>
-#include <utility.hpp>
+#include <dropclone/errorcode.hpp>
+#include <dropclone/utility.hpp>
 #include <unordered_map>
 #include <memory>
 #include <utility>
@@ -37,10 +37,6 @@ class logger_manager {
       return logger;
     }()
   } {}
-
-  explicit logger_manager(std::unique_ptr<spdlog::logger> core_logger)
-    : core_logger_{std::move(core_logger)}
-  {}
 
   auto get(logger_id id) -> std::shared_ptr<spdlog::logger> {
     if (id == logger_id::core) { return core_logger_; }

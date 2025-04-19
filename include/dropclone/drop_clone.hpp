@@ -1,7 +1,6 @@
 #pragma once
 
-// #include <clone_manager.hpp>
-#include <clone_config.hpp>
+#include <dropclone/clone_config.hpp>
 #include <filesystem>
 
 namespace dropclone {
