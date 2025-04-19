@@ -10,7 +10,9 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(Catch2)
 
-add_executable(dropclone_tests run_test.cpp)
+add_executable(dropclone_tests 
+  config_entry_test.cpp
+)
 
 target_link_libraries(dropclone_tests PRIVATE dropclone_lib Catch2::Catch2WithMain)
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
