@@ -1,10 +1,10 @@
 #define JSON_DIAGNOSTICS 1
 
 #include <nlohmann/json.hpp>
-#include <parsers/nlohmann_json_parser.hpp>
-#include <exception.hpp>
-#include <errorcode.hpp>
-#include <clone_config.hpp>
+#include <dropclone/nlohmann_json_parser.hpp>
+#include <dropclone/exception.hpp>
+#include <dropclone/errorcode.hpp>
+#include <dropclone/clone_config.hpp>
 #include <filesystem>
 #include <fstream>
 #include <cstdlib>
