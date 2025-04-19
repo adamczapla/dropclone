@@ -1,3 +1,9 @@
+#include <spdlog/spdlog.h>
+#include <spdlog/logger.h>
+#include "spdlog/async.h"
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include "spdlog/sinks/rotating_file_sink.h"
 #include <drop_clone.hpp>
 #include <clone_config.hpp>
 #include <logger_manager.hpp>
@@ -5,10 +11,8 @@
 #include <exception.hpp>
 #include <messagecode.hpp>
 #include <utility>
-#include <fstream>
 #include <filesystem>
 #include <string>
-#include <string_view>
 
 namespace dropclone {
 
