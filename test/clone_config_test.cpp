@@ -3,10 +3,10 @@
 #include <catch2/matchers/catch_matchers_exception.hpp>
 #include <dropclone/clone_config.hpp>
 #include <dropclone/exception.hpp>
+#include <dropclone/errorcode.hpp>
+#include <dropclone/utility.hpp>
 #include <filesystem>
 #include <string>
-
-#include <iostream>
 
 namespace fs = std::filesystem;
 namespace dc = dropclone;
@@ -35,8 +35,27 @@ TEST_CASE("sanitize assigns default log_directory based on config path if empty"
 }
 
 TEST_CASE("sanitize throws if log_directory cannot be created", "[clone_config]") { 
+  fs::path readonly_directory = log_path / fs::path{"readonly"};
+  fs::perms original_permissions{};
+
+  try {
+    fs::create_directories(readonly_directory);
+    original_permissions = fs::status(readonly_directory).permissions();
+    fs::permissions(readonly_directory, 
+      fs::perms::owner_write | fs::perms::group_write | fs::perms::others_write, 
+      fs::perm_options::remove
+    );
+  } catch(fs::filesystem_error const& e) {
+    fs::permissions(readonly_directory, original_permissions, fs::perm_options::replace);
+    FAIL(dc::utility::formatter<dc::errorcode::test>::format(
+      dc::errorcode::test::failed_prepare_readonly_dir,
+      readonly_directory.lexically_normal().string(),
+      e.what()
+    ));
+  }
+
   dc::clone_config config{};
-  config.log_directory = log_path / fs::path{"readonly/fails"};
+  config.log_directory = readonly_directory / fs::path{"fails"};
   using Catch::Matchers::ContainsSubstring;
   using Catch::Matchers::MessageMatches;
   REQUIRE_THROWS_MATCHES(config.sanitize(config_path), dc::exception, 
