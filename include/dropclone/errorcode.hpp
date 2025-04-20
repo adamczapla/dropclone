@@ -52,5 +52,13 @@ struct system {
     {unknown_fatal_error, "Unknown fatal error occurred – possible internal crash or signal"}
   };
 };
+
+struct test {
+  static constexpr auto failed_prepare_readonly_dir = "test_error.001";
+
+  static inline std::unordered_map<std::string_view, std::string_view> const messages{
+    {failed_prepare_readonly_dir, "Could not prepare readonly directory: {} |\n↳ origin error:\n\t↳ {}"}
+  };
+};
   
 } // namespace dropclone::errorcode
