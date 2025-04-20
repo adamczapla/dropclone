@@ -5,12 +5,8 @@
 #include <dropclone/utility.hpp>
 #include <string>
 #include <string_view>
-#include <optional>
 #include <filesystem>
 #include <unordered_map>
-#include <ostream>
-
-#include <iostream>
 
 namespace dropclone {
 
@@ -101,15 +97,6 @@ auto clone_config::sanitize(fs::path const& config_path) -> void {
       e.what()
     );
   }
-}
-
-auto operator<<(std::ostream& ostrm, clone_mode const& mode) -> std::ostream& {
-  switch (mode) {
-    case clone_mode::copy: ostrm << "copy"; break;
-    case clone_mode::move: ostrm << "move"; break;
-    case clone_mode::undefined: ostrm << "undefined"; break;
-  }
-  return ostrm;
 }
   
 } // namespace dropclone
