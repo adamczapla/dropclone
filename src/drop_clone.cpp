@@ -16,19 +16,18 @@
 
 namespace dropclone {
 
-drop_clone::drop_clone(fs::path config_path, config_parser parser)  
-    : config_path_{std::move(config_path)}, parser_{std::move(parser)} { 
+drop_clone::drop_clone(fs::path config_path, config_parser parser) : parser_{std::move(parser)} { 
   try {
     init_config_logger();
 
-    clone_config_ = parser_(config_path_);
+    clone_config_ = parser_(config_path);
     logger.get(logger_id::config)->info(
       utility::formatter<messagecode::logger::config>::format(
         messagecode::logger::config::config_file_parsed,
-        config_path_.string()
+        config_path.string()
     ));
 
-    clone_config_.sanitize(config_path_);
+    clone_config_.sanitize(config_path);
     clone_config_.validate();
     logger.get(logger_id::config)->info(
       utility::formatter<messagecode::logger::config>::format(

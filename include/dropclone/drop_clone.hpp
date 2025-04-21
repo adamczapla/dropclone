@@ -16,8 +16,7 @@ class drop_clone {
   auto init_startup_logger() -> void;
   auto init_daemon_logger() -> void;
 
-  fs::path config_path_; // maybe i'll remove it later
-  config_parser parser_; // maybe i'll remove it later
+  config_parser parser_;
   clone_config clone_config_;
 };
   

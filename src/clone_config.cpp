@@ -56,6 +56,12 @@ auto clone_config::has_conflict(path_node& root_node, fs::path const& path) cons
 }
 
 auto clone_config::validate() -> void {
+  if (entries.empty()) {
+    throw_exception<errorcode::config>(
+      errorcode::config::no_entries_defined, config_path.string()
+    );
+  }
+
   path_node root_source{};
   path_node root_destination{};
 
@@ -78,8 +84,10 @@ auto clone_config::validate() -> void {
   }
 }
 
-auto clone_config::sanitize(fs::path const& config_path) -> void {
+auto clone_config::sanitize(fs::path const& path) -> void {
+  config_path = path.lexically_normal();
   log_directory = log_directory.lexically_normal(); 
+
   try { 
     if (!log_directory.is_absolute()) { 
       log_directory = config_path.parent_path() /

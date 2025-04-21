@@ -31,10 +31,11 @@ struct config_entry {
 class clone_config {
  public:
   std::vector<config_entry> entries{};
+  fs::path config_path{};
   fs::path log_directory{};
 
-  auto validate() -> void; 
   auto sanitize(fs::path const&) -> void;
+  auto validate() -> void; 
 
  private:
   struct path_node {
