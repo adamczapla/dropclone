@@ -116,3 +116,54 @@ TEST_CASE("validate throws if source_directory reports a conflict", "[clone_conf
   config.entries = {{path_ab, path_a}, {path_a_slash, path_b}};
   CHECK_THROWS_MATCHES(config.validate(), dc::exception, message_matches);
 }
+
+TEST_CASE("validate throws if destination_directory reports a conflict", "[clone_config][validate]") {
+  dc::clone_config config{};
+
+  auto const message_matches = MessageMatches(ContainsSubstring("destination_directory"));
+
+  config.entries = {{path_a, path_root}, {path_b, path_a_slash}};
+  CHECK_THROWS_MATCHES(config.validate(), dc::exception, message_matches);
+
+  config.entries = {{path_a, path_a}, {path_b, path_a_slash}};
+  CHECK_THROWS_MATCHES(config.validate(), dc::exception, message_matches);
+
+  config.entries = {{path_a, path_a_slash}, {path_b, path_a_slash}};
+  CHECK_THROWS_MATCHES(config.validate(), dc::exception, message_matches);
+
+  config.entries = {{path_a, path_a}, {path_b, path_ab}};
+  CHECK_THROWS_MATCHES(config.validate(), dc::exception, message_matches);
+
+  config.entries = {{path_a, path_a_slash}, {path_b, path_ab_slash}};
+  CHECK_THROWS_MATCHES(config.validate(), dc::exception, message_matches);
+
+  config.entries = {{path_a, path_ab_slash}, {path_b, path_a}};
+  CHECK_THROWS_MATCHES(config.validate(), dc::exception, message_matches);
+  
+  config.entries = {{path_a, path_ab}, {path_b, path_a_slash}};
+  CHECK_THROWS_MATCHES(config.validate(), dc::exception, message_matches);
+}
+
+TEST_CASE("validate passes if source and destination directory do not report a conflict", "[clone_config][validate]") {
+  dc::clone_config config{};
+  
+  config.entries = { {path_b, path_b}, {path_ab, path_ab}};
+  CHECK_NOTHROW(config.validate());
+
+  config.entries = {{path_b_slash, path_b_slash}, {path_ab_slash, path_ab_slash}};
+  CHECK_NOTHROW(config.validate());
+
+  config.entries = {{path_b, path_b}, {path_ab_slash, path_ab_slash}};
+  CHECK_NOTHROW(config.validate());
+
+  config.entries = {{path_b_slash, path_b_slash}, {path_ab, path_ab}};
+  CHECK_NOTHROW(config.validate());
+}
+
+TEST_CASE("validate throws if no entries defined in clone_config", "[clone_config][validate]") {
+  dc::clone_config config{};
+
+  REQUIRE_THROWS_MATCHES(config.validate(), dc::exception, 
+    Catch::Matchers::MessageMatches(Catch::Matchers::ContainsSubstring("config_error.010")));
+}
+
