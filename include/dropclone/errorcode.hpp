@@ -59,9 +59,11 @@ struct system {
 
 struct test {
   static constexpr auto failed_prepare_readonly_dir = "test_error.001";
+  static constexpr auto could_not_open_temporary_file = "test_error.001";
 
   static inline std::unordered_map<std::string_view, std::string_view> const messages{
-    {failed_prepare_readonly_dir, "Could not prepare readonly directory: {} |\n↳ origin error:\n\t↳ {}"}
+    {failed_prepare_readonly_dir, "Could not prepare readonly directory: {} |\n↳ origin error:\n\t↳ {}"},
+    {could_not_open_temporary_file, "cannot open temporary config file: {}"},
   };
 };
   
