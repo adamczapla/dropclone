@@ -11,8 +11,8 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 add_executable(dropclone_tests 
-  config_entry_test.cpp
   clone_config_test.cpp
+  clone_config_config_entry_test.cpp
 )
 
 target_link_libraries(dropclone_tests PRIVATE dropclone_lib Catch2::Catch2WithMain)
@@ -25,6 +25,7 @@ option(RUN_TESTS "Run tests automatically after build" OFF)
 
 if(RUN_TESTS)
   add_custom_target(run_tests ALL
+    # COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -V
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
     DEPENDS dropclone_tests
   )
