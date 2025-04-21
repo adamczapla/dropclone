@@ -70,3 +70,10 @@ TEST_CASE("sanitize normalizes absolute log_directory", "[clone_config][sanitize
   REQUIRE_THAT(config.log_directory.string(), 
     Catch::Matchers::Equals(log_path.lexically_normal().string()));
 }
+
+TEST_CASE("sanitize stores config_path normalized", "[clone_config][sanitize]") {
+  dc::clone_config config{};
+  config.sanitize(config_path);
+  REQUIRE_THAT(config.config_path.string(), 
+    Catch::Matchers::Equals(config_path.lexically_normal().string()));
+}
