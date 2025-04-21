@@ -55,11 +55,13 @@ auto clone_config::has_conflict(path_node& root_node, fs::path const& path) cons
   return false;
 }
 
-auto clone_config::validate() const -> void {
+auto clone_config::validate() -> void {
   path_node root_source{};
   path_node root_destination{};
 
-  for (auto const& entry : entries) {
+  for (auto& entry : entries) {
+    entry.sanitize();
+
     if (has_conflict(root_source, entry.source_directory)) {
       throw_exception<errorcode::config>(
         errorcode::config::overlapping_path_conflict, 

@@ -33,7 +33,7 @@ class clone_config {
   std::vector<config_entry> entries{};
   fs::path log_directory{};
 
-  auto validate() const -> void; 
+  auto validate() -> void; 
   auto sanitize(fs::path const&) -> void;
 
  private:

@@ -28,7 +28,6 @@ drop_clone::drop_clone(fs::path config_path, config_parser parser)
         config_path_.string()
     ));
 
-    for (auto& entry : clone_config_.entries) { entry.sanitize(); }
     clone_config_.sanitize(config_path_);
     clone_config_.validate();
     logger.get(logger_id::config)->info(
