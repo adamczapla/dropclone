@@ -37,15 +37,33 @@ auto nlohmann_json_parser::operator()(fs::path config_path) -> clone_config {
 
   clone_config config{};
 
-  config.log_directory = json_config.value("log_directory", fs::path{});
-
   try {
+    auto throw_if_missing_required_field = [&](auto const& json, auto const& field) {
+      if (!json.contains(field)) { 
+        throw_exception<errorcode::config>(
+          errorcode::config::missing_required_field, 
+          field, config_path.string()
+        );
+      }
+    };
+
+    throw_if_missing_required_field(json_config, "log_directory");
+    config.log_directory = json_config.value("log_directory", fs::path{});
+    throw_if_missing_required_field(json_config, "clone_config");
+
     for (auto const& elem : json_config["clone_config"]) {
+      throw_if_missing_required_field(elem, "source_directory");
+      throw_if_missing_required_field(elem, "destination_directory");
+      throw_if_missing_required_field(elem, "mode");
+
+      bool recursive = true;
+      if (elem.contains("recursive")) { recursive = elem["recursive"]; }
+
       config.entries.emplace_back(
         elem["source_directory"],
         elem["destination_directory"],
         elem["mode"],
-        elem["recursive"]
+        recursive
       );
     }
   } catch (json::exception const& e) {
