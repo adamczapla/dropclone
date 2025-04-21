@@ -13,6 +13,7 @@ FetchContent_MakeAvailable(Catch2)
 add_executable(dropclone_tests 
   clone_config_test.cpp
   clone_config_config_entry_test.cpp
+  nlohmann_json_parser_test.cpp
 )
 
 target_link_libraries(dropclone_tests PRIVATE dropclone_lib Catch2::Catch2WithMain)
