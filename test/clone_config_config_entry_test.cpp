@@ -1,8 +1,12 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
 #include <dropclone/clone_config.hpp>
 #include <dropclone/exception.hpp>
+#include <dropclone/errorcode.hpp>
+#include <dropclone/utility.hpp>
 #include <filesystem>
+#include <vector>
 #include <string>
 
 namespace fs = std::filesystem;
@@ -73,4 +77,42 @@ TEST_CASE("sanitize normalizes source and destination paths", "[clone_config][co
   using Catch::Matchers::Equals;
   CHECK_THAT(entry.source_directory.string(), Equals("/dropclone/test/"));
   CHECK_THAT(entry.destination_directory.string(), Equals("/dropclone/test/"));
+}
+
+static fs::path const path_root{"/"};
+static fs::path const path_a{"/a"};
+static fs::path const path_a_slash{"/a/"};
+static fs::path const path_b{"/b"};
+static fs::path const path_b_slash{"/b/"};
+static fs::path const path_ab{"/a/b"};
+static fs::path const path_ab_slash{"/a/b/"};
+
+using Catch::Matchers::ContainsSubstring;
+using Catch::Matchers::MessageMatches;
+
+TEST_CASE("validate throws if source_directory reports a conflict", "[clone_config][validate]") {
+  dc::clone_config config{};
+
+  auto const message_matches = MessageMatches(ContainsSubstring("source_directory"));
+
+  config.entries = {{path_root, path_a}, {path_a_slash, path_b}};
+  CHECK_THROWS_MATCHES(config.validate(), dc::exception, message_matches);
+
+  config.entries = {{path_a, path_a}, {path_a_slash, path_b}};
+  CHECK_THROWS_MATCHES(config.validate(), dc::exception, message_matches);
+
+  config.entries = {{path_a_slash, path_a}, {path_a_slash, path_b}};
+  CHECK_THROWS_MATCHES(config.validate(), dc::exception, message_matches);
+
+  config.entries = {{path_a, path_a}, {path_ab, path_b}};
+  CHECK_THROWS_MATCHES(config.validate(), dc::exception, message_matches);
+
+  config.entries = {{path_a_slash, path_a}, {path_ab_slash, path_b}};
+  CHECK_THROWS_MATCHES(config.validate(), dc::exception, message_matches);
+
+  config.entries = {{path_ab_slash, path_a}, {path_a, path_b}};
+  CHECK_THROWS_MATCHES(config.validate(), dc::exception, message_matches);
+  
+  config.entries = {{path_ab, path_a}, {path_a_slash, path_b}};
+  CHECK_THROWS_MATCHES(config.validate(), dc::exception, message_matches);
 }
