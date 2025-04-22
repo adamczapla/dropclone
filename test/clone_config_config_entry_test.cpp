@@ -164,6 +164,6 @@ TEST_CASE("validate throws if no entries defined in clone_config", "[clone_confi
   dc::clone_config config{};
 
   REQUIRE_THROWS_MATCHES(config.validate(), dc::exception, 
-    Catch::Matchers::MessageMatches(Catch::Matchers::ContainsSubstring("config_error.010")));
+    Catch::Matchers::MessageMatches(Catch::Matchers::ContainsSubstring("config_error.009")));
 }
 
