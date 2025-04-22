@@ -51,6 +51,18 @@ auto nlohmann_json_parser::operator()(fs::path config_path) -> clone_config {
     config.log_directory = json_config.value("log_directory", fs::path{});
     throw_if_missing_required_field(json_config, "clone_config");
 
+    if (!json_config["clone_config"].is_array()) {
+      throw_exception<errorcode::config>(
+        errorcode::config::invalid_field_type, "clone_config"
+      );
+    }
+
+    if (json_config["clone_config"].empty()) {
+      throw_exception<errorcode::config>(
+        errorcode::config::no_entries_defined, "clone_config"
+      );
+    }
+
     for (auto const& elem : json_config["clone_config"]) {
       throw_if_missing_required_field(elem, "source_directory");
       throw_if_missing_required_field(elem, "destination_directory");
