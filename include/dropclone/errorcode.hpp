@@ -32,10 +32,12 @@ struct config {
 };
 
 struct filesystem {
-  static constexpr auto could_not_create_directory = "filesystem_error.001";
+  static constexpr auto could_not_create_directory    = "filesystem_error.001";
+  static constexpr auto failed_to_traverse_directory  = "filesystem_error.002";
   
   static inline std::unordered_map<std::string_view, std::string_view> const messages{
-    {could_not_create_directory, "could not create directory: {} |\n↳ origin error: \n\t↳ {}"}
+    {could_not_create_directory, "could not create directory: {} |\n↳ origin error: \n\t↳ {}"},
+    {failed_to_traverse_directory, "failed to traverse directory: {} in {} |\n↳ origin error: \n\t↳ {}"}
   };
 };
 
