@@ -6,6 +6,7 @@
 #include "spdlog/sinks/rotating_file_sink.h"
 #include <dropclone/drop_clone.hpp>
 #include <dropclone/clone_config.hpp>
+#include <dropclone/clone_manager.hpp>
 #include <dropclone/logger_manager.hpp>
 #include <dropclone/utility.hpp>
 #include <dropclone/exception.hpp>
@@ -13,14 +14,18 @@
 #include <utility>
 #include <filesystem>
 #include <string>
+#include <ranges>
+#include <vector>
 
 namespace dropclone {
 
-drop_clone::drop_clone(fs::path config_path, config_parser parser) : parser_{std::move(parser)} { 
+namespace rng = std::ranges;
+
+drop_clone::drop_clone(fs::path config_path, config_parser parser) { 
   try {
     init_config_logger();
 
-    clone_config_ = parser_(config_path);
+    clone_config_ = parser(config_path);
     logger.get(logger_id::config)->info(
       utility::formatter<messagecode::logger::config>::format(
         messagecode::logger::config::config_file_parsed,
@@ -34,6 +39,10 @@ drop_clone::drop_clone(fs::path config_path, config_parser parser) : parser_{std
         messagecode::logger::config::config_validated,
         clone_config_.entries.size()
     ));
+
+    rng::for_each(clone_config_.entries, [&](auto const& entry) {
+      managers_.emplace_back(entry);
+    });
 
     spdlog::init_thread_pool(8192, 1);
     init_startup_logger();
@@ -140,6 +149,13 @@ auto drop_clone::init_daemon_logger() -> void {
       messagecode::logger::config::logging_ready,
       log_file.string()
   ));
+}
+
+auto drop_clone::sync() -> void {
+  // ! catch any exception in this member
+  rng::for_each(managers_, [&](auto& clone_manager) { 
+    clone_manager.sync(); 
+  });
 }
   
 } // namespace dropclone
