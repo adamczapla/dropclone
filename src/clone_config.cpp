@@ -36,6 +36,8 @@ auto config_entry::sanitize() -> void {
   destination_directory = destination_directory.lexically_normal();
 }
 
+auto config_entry::filter(fs::path const& path) -> bool { return true; } // only for now
+
 auto clone_config::has_conflict(path_node& root_node, fs::path const& path) const -> bool {
   path_node* current_node = &root_node;
 

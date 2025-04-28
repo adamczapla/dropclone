@@ -25,7 +25,9 @@ struct config_entry {
   clone_mode mode{};
   bool recursive{true};
   // + exclude_patterns as regular expression
+  // bidirectional_sync {true, false}
   auto sanitize() -> void;
+  auto filter(fs::path const&) -> bool;
 };
 
 class clone_config {
