@@ -1,25 +1,63 @@
 #include <dropclone/clone_manager.hpp>
+#include <dropclone/clone_config.hpp>
+#include <dropclone/path_snapshot.hpp>
+#include <dropclone/exception.hpp>
 #include <filesystem>
-#include <numeric>
-#include <execution>
-#include <functional>
+
+#include <iostream> // do not forget to remove it
 
 namespace dropclone {
 
-namespace rng = std::ranges;
 namespace fs = std::filesystem;
+namespace dc = dropclone;
 
-clone_manager::clone_manager(fs::path root) : root_{root} { make_snapshot(); }
+clone_manager::clone_manager(config_entry entry) 
+  : source_snapshot_{entry.source_directory}, 
+    destination_snapshot_{entry.destination_directory}, 
+    entry_{std::move(entry)}
+{}
 
-auto clone_manager::hash(path_snapshot const& snapshot) noexcept -> size_t {
-  return std::reduce(std::execution::par, rng::begin(snapshot), rng::end(snapshot), size_t{0}, 
-    [](size_t seed, auto const& file) {
-      return std::bit_xor{}(seed, std::hash<path_info>{}(file.second));
-    }); 
-}
+auto clone_manager::copy(path_snapshot const& snapshot) -> void {}
+auto clone_manager::remove(path_snapshot const& snapshot) -> void {}
 
-auto clone_manager::make_snapshot() -> void {
+auto clone_manager::sync() -> void {
+  try {
+    auto current_source_snapshot = path_snapshot{source_snapshot_.root()};
+    current_source_snapshot.make([&](fs::path const& path) { return entry_.filter(path); });
 
+    if(source_snapshot_.hash() == current_source_snapshot.hash()) { return; }
+
+    auto diff_snapshot_update = current_source_snapshot - source_snapshot_;
+    // copy(diff_snapshot_update);
+  
+    // if (entry_.mode == clone_mode::move) { remove(diff_snapshot_update); } 
+  
+    // auto diff_snapshot_remove = source_snapshot_ - current_source_snapshot; 
+    // remove(diff_snapshot_remove);
+  
+    source_snapshot_ = std::move(current_source_snapshot);
+
+  } catch (dc::exception const& e) {
+    std::cerr << e.what() << '\n';
+  }
+  // try {
+  //   auto current_source_snapshot = path_snapshot{source_snapshot_.root_};
+  //   current_source_snapshot.make();
+  
+  //   if(source_snapshot_.hash_ == current_source_snapshot.hash_) { return; }
+  
+  //   auto diff_snapshot_update = current_source_snapshot - source_snapshot_;
+  //   copy(diff_snapshot_update);
+  
+  //   if (entry_.mode == clone_mode::move) { remove(diff_snapshot_update); } 
+  
+  //   auto diff_snapshot_remove = source_snapshot_ - current_source_snapshot; 
+  //   remove(diff_snapshot_remove);
+  
+  //   source_snapshot_ = std::move(current_source_snapshot);
+  // } catch (fs::filesystem_error const& e) {
+  //   // handling
+  // }
 }
 
 } // dropclone

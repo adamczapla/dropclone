@@ -1,8 +1,7 @@
 #pragma once
 
-#include <dropclone/path_info.hpp>
-#include <filesystem>
-#include <unordered_map>
+#include <dropclone/clone_config.hpp>
+#include <dropclone/path_snapshot.hpp>
 
 namespace dropclone {
 
@@ -10,22 +9,16 @@ namespace fs = std::filesystem;
 
 class clone_manager {
  public:
-  using path_snapshot = std::unordered_map<fs::path, path_info>;
+  clone_manager(config_entry entry);
 
-  explicit clone_manager(fs::path root);
-
-  auto hash(path_snapshot const&) noexcept -> size_t;
-  inline auto current() const noexcept -> path_snapshot const&;
+  auto sync() -> void;
+  auto copy(path_snapshot const& snapshot) -> void;
+  auto remove(path_snapshot const& snapshot) -> void;
 
  private:
-  path_snapshot snapshot_{};
-  fs::path root_;
-
-  auto make_snapshot() -> void;
+  path_snapshot source_snapshot_;
+  path_snapshot destination_snapshot_;
+  config_entry entry_;
 };
-
-auto clone_manager::current() const noexcept -> path_snapshot const& {
-  return snapshot_;
-}
 
 } // namespace dropclone
