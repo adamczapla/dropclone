@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <filesystem>
 #include <functional>
+#include <unordered_set> 
 
 namespace dropclone {
 
@@ -12,6 +13,7 @@ namespace dropclone {
   class path_snapshot {
    public:
     using snapshot_entries = std::unordered_map<fs::path, path_info>; 
+    using uncertain_processing_paths = std::unordered_set<fs::path>;
     using path_filter = std::function<bool(fs::path const&)>;
   
     explicit path_snapshot(fs::path root);
@@ -26,6 +28,7 @@ namespace dropclone {
     fs::path root_;
     snapshot_entries entries_{};
     snapshot_entries conflicts_{};
+    uncertain_processing_paths uncertain_processing_paths_{};
     size_t hash_{};
   
     auto compute_hash() const -> size_t;
