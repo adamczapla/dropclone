@@ -34,10 +34,26 @@ struct config {
 struct filesystem {
   static constexpr auto could_not_create_directory    = "filesystem_error.001";
   static constexpr auto failed_to_traverse_directory  = "filesystem_error.002";
+  static constexpr auto copy_command_failed           = "filesystem_error.003";
+  static constexpr auto rename_command_failed         = "filesystem_error.004";
+  static constexpr auto remove_command_failed         = "filesystem_error.005";
   
   static inline std::unordered_map<std::string_view, std::string_view> const messages{
     {could_not_create_directory, "could not create directory: {} |\n↳ origin error: \n\t↳ {}"},
-    {failed_to_traverse_directory, "failed to traverse directory: {} in {} |\n↳ origin error: \n\t↳ {}"}
+    {failed_to_traverse_directory, "failed to traverse directory: {} in {} |\n↳ origin error: \n\t↳ {}"},
+    {copy_command_failed, "copy_command failed: '{}' → '{}' |\n↳ origin error:\n\t↳ {}"},
+    {rename_command_failed, "rename_command failed: '{}' → '{}' |\n↳ origin error:\n\t↳ {}"},
+    {remove_command_failed, "remove_command failed: '{}' |\n↳ origin error:\n\t↳ {}"}
+  };
+};
+
+struct transaction {
+  static constexpr auto start_failed    = "transaction_error.001";
+  static constexpr auto rollback_failed = "transaction_error.002";
+
+  static inline std::unordered_map<std::string_view, std::string_view> const messages{
+    {start_failed, "transaction failed and was rolled back |\n↳ origin error:\n\t↳ {}"},
+    {rollback_failed, "rollback failed – system may be inconsistent |\n↳ origin error:\n\t↳ {}"}
   };
 };
 
