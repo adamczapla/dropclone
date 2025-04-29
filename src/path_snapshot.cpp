@@ -2,6 +2,7 @@
 #include <dropclone/exception.hpp>
 #include <dropclone/errorcode.hpp>
 #include <ranges>
+#include <algorithm>
 #include <filesystem>
 #include <numeric>
 #include <execution>
