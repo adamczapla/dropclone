@@ -17,12 +17,10 @@ namespace messagecode {
 struct path_conflict {
   static constexpr auto size_mismatch         = "path_conflict_message.001";
   static constexpr auto permission_mismatch   = "path_conflict_message.002";
-  static constexpr auto permission_denied     = "path_conflict_message.003";
 
   static inline std::unordered_map<path_conflict_t, std::string_view> const messages{
     {path_conflict_t::size_mismatch, "file sizes differ for '{}' despite identical timestamps"},
-    {path_conflict_t::permission_mismatch, "file permissions differ for '{}'"},
-    {path_conflict_t::permission_denied, "file permissions denied for '{}'"}
+    {path_conflict_t::permission_mismatch, "file permissions differ for '{}'"}
   };
 };
   
@@ -39,8 +37,6 @@ inline auto to_string(path_conflict_t conflict) -> std::string {
       return std::string{msc::path_conflict::size_mismatch};
     case path_conflict_t::permission_mismatch:
       return std::string{msc::path_conflict::permission_mismatch};
-    case path_conflict_t::permission_denied:
-      return std::string{msc::path_conflict::permission_denied};
   }
   return "unknown conflict";
 }
