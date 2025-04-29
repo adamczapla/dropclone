@@ -6,6 +6,7 @@ add_library(dropclone_lib STATIC
   clone_config.cpp
   nlohmann_json_parser.cpp
   path_snapshot.cpp
+  clone_transaction.cpp
 )
 
 target_include_directories(dropclone_lib PUBLIC 
