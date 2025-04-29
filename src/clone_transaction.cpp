@@ -56,7 +56,11 @@ auto clone_transaction::start() -> void {
 }
 
 auto clone_transaction::rollback() -> void {
-
+  while (!processed_commands_.empty()) {
+    auto command = processed_commands_.top();
+    std::visit([](auto const& cmd) { cmd.undo(); }, command);
+    processed_commands_.pop();
+  }
 }
 
 } // namespace dropclone  
