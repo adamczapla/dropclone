@@ -12,7 +12,7 @@ class clone_manager {
   clone_manager(config_entry entry);
 
   auto sync() -> void;
-  auto copy(path_snapshot const& snapshot) -> void;
+  auto copy(path_snapshot const& source_snapshot, fs::path const& destination_root) -> void;
   auto remove(path_snapshot const& snapshot) -> void;
 
  private:
