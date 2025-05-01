@@ -22,15 +22,30 @@ namespace dropclone {
 
   auto path_snapshot::operator-(path_snapshot const& other) -> path_snapshot { 
     path_snapshot result{root_};
+
+    auto const emplace = [&](fs::path const& path, path_info const& info) {
+      if (fs::is_directory(root_ / path)) {
+        result.directories_.emplace(path, info);
+      } else {
+        result.files_.emplace(path, info);
+      }
+    };
+
     rng::for_each(entries_, [&](auto& entry) {
       if (auto found = other.entries_.find(entry.first); found == rng::end(other.entries_)) {
         if (auto found_uncertain_paths = other.uncertain_processing_paths_.find(entry.first); 
             found_uncertain_paths != rng::end(other.uncertain_processing_paths_)) {
           result.uncertain_processing_paths_.insert(entry.first);
+        } else {
+          entry.second.path_status = path_info::status::added;
+          emplace(entry.first, entry.second);
         }
       } else {
-        if (entry.second.last_write_time < found->second.last_write_time) {
-          result.entries_.emplace(entry.first, found->second);
+        entry.second.path_status = path_info::status::updated;
+        if (entry.second.last_write_time != found->second.last_write_time) {
+          entry.second = found->second;
+          entry.second.path_status = path_info::status::updated;
+          emplace(entry.first, entry.second);
         } else if (entry.second.last_write_time == found->second.last_write_time && 
                    entry.second.file_size != found->second.file_size) {
           entry.second.conflict = path_conflict_t::size_mismatch;
@@ -52,11 +67,12 @@ namespace dropclone {
         | vws::filter([&](auto const& entry) { return filter(entry.path()); });
 
       for (auto const& dir_entry : recursive_directory_view) {
+        auto const relative_entry_path = fs::relative(dir_entry.path(), root_);
         if (error_code == std::errc::permission_denied) {
-          uncertain_processing_paths_.insert(dir_entry.path());
+          uncertain_processing_paths_.insert(relative_entry_path);
           error_code.clear();
         } else {
-          entries_.try_emplace(dir_entry.path(), 
+          entries_.try_emplace(relative_entry_path,
             dir_entry.last_write_time(), 
             dir_entry.is_directory() ? 0 : dir_entry.file_size(), 
             dir_entry.status().permissions()
@@ -83,7 +99,23 @@ namespace dropclone {
     return std::reduce(std::execution::par, rng::begin(entries_), rng::end(entries_), size_t{0}, 
       [](size_t seed, auto const& file) {
         return std::bit_xor{}(seed, std::hash<path_info>{}(file.second));
-      }); 
+    }); 
+  }
+
+  auto path_snapshot::add_files(snapshot_entries const& entries, entry_filter filter) -> void {
+    rng::for_each(entries, [&](auto const& entry) {
+      if (filter(entry)) { files_.emplace(entry.first, entry.second); }
+    });
+  }
+
+  auto path_snapshot::add_directories(snapshot_directories const& directories, entry_filter filter) -> void {
+    rng::for_each(directories, [&](auto const& directory) {
+      if (filter(directory)) { directories_.emplace(directory.first, directory.second); }
+    });
+  }
+
+  auto path_snapshot::rebase(fs::path const& new_root) -> void {
+    root_ = new_root;
   }
 
 } // namespace dropclone
