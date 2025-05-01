@@ -6,6 +6,8 @@
 #include <stdexcept>
 #include <algorithm>
 
+#include <iostream> // remove it later
+
 namespace dropclone {
 
 namespace rng = std::ranges;
@@ -13,7 +15,15 @@ namespace fs = std::filesystem;
 
 auto copy_command::execute() const -> void {
   try {
-    // copy code
+    for (auto const& entry : snapshot_.directories()) {
+      std::cout << "copy_command: crate directory " << (destination_root_ / entry.first) 
+                << '\n';
+    }
+    for (auto const& entry : snapshot_.files()) {
+      std::cout << "copy_command: copy from " << (snapshot_.root() / entry.first) 
+                << "to " << (destination_root_ / entry.first) 
+                << '\n';
+    }
   } catch (fs::filesystem_error const& err) {
     throw_exception<errorcode::filesystem>(
       errorcode::filesystem::copy_command_failed,
@@ -25,10 +35,29 @@ auto copy_command::execute() const -> void {
 }
 auto copy_command::undo() const -> void {}
 
-auto rename_command::execute() const -> void {}
+auto rename_command::execute() const -> void {
+  for (auto const& entry : snapshot_.directories()) {
+    std::cout << "rename_command: crate directory " << (destination_root_ / entry.first) 
+              << '\n';
+  }
+  for (auto const& entry : snapshot_.files()) {
+    std::cout << "rename_command: rename from " << (snapshot_.root() / entry.first) 
+              << " to " << destination_root_ / entry.first 
+              << '\n';
+  }
+}
 auto rename_command::undo() const -> void {}
 
-auto remove_command::execute() const -> void {}
+auto remove_command::execute() const -> void {
+  for (auto const& entry : snapshot_.files()) {
+    std::cout << "remove_command: remove " << (snapshot_.root() / entry.first) 
+              << '\n';
+  }
+  for (auto const& entry : snapshot_.directories()) {
+    std::cout << "remove_command: remove directory " << (snapshot_.root() / entry.first) 
+              << '\n';
+  }
+}
 auto remove_command::undo() const -> void {}
 
 auto clone_transaction::start() -> void {
