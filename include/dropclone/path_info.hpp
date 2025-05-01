@@ -43,10 +43,14 @@ inline auto to_string(path_conflict_t conflict) -> std::string {
 
 } // namespace utility
   
+  
 struct path_info {
+  enum class status {unchanged, added, updated};
+
   fs::file_time_type last_write_time{};
   uintmax_t file_size{};
   fs::perms file_perms{};
+  status path_status{status::unchanged};
   path_conflict_t conflict{path_conflict_t::none};
   
   auto operator==(path_info const&) const -> bool = default;
