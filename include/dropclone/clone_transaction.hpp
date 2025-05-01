@@ -5,6 +5,7 @@
 #include <variant>
 #include <stack>
 #include <vector> 
+#include <utility>
 
 namespace dropclone {
 
@@ -18,29 +19,39 @@ concept is_clone_command = requires (clone_command command) {
 
 class copy_command {
  public:
-  copy_command(path_snapshot snapshot) : snapshot_{snapshot} {}
+  copy_command(path_snapshot snapshot, fs::path destination_root) 
+    : snapshot_{std::move(snapshot)}, 
+      destination_root_{std::move(destination_root)} 
+  {}
 
   auto execute() const -> void;
   auto undo() const -> void;
 
  private:
   path_snapshot snapshot_;
+  fs::path destination_root_;
 };
 
 class rename_command {
  public:
-  rename_command(path_snapshot snapshot) : snapshot_{snapshot} {}
+  rename_command(path_snapshot snapshot, fs::path destination_root) 
+    : snapshot_{std::move(snapshot)}, 
+      destination_root_{std::move(destination_root)} 
+  {}
 
   auto execute() const -> void;
   auto undo() const -> void;
 
  private:
   path_snapshot snapshot_;
+  fs::path destination_root_;
 };
 
 class remove_command {
  public:
-  remove_command(path_snapshot snapshot) : snapshot_{snapshot} {}
+  remove_command(path_snapshot snapshot)
+    : snapshot_{std::move(snapshot)} 
+  {}
 
   auto execute() const -> void;
   auto undo() const -> void;
@@ -59,11 +70,12 @@ class clone_transaction {
  public:
   inline auto add(clone_command command) -> void;
   auto start() -> void;
-  auto rollback() -> void;
 
  private:
   std::vector<clone_command> commands_{};
   std::stack<clone_command> processed_commands_{};
+
+  auto rollback() -> void;
 };
 
 auto clone_transaction::add(clone_command command) -> void { 
