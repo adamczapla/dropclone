@@ -11,14 +11,13 @@
 
 namespace dropclone {
 
-enum class logger_id { core, config, startup, daemon };
+enum class logger_id {core, config, sync};
 
 inline auto to_string(logger_id id) -> std::string {
   switch (id) {
     case logger_id::core:     return "core"; 
     case logger_id::config:   return "config";  
-    case logger_id::startup:  return "startup"; 
-    case logger_id::daemon:   return "daemon";
+    case logger_id::sync:     return "sync"; 
   }
   return "unknown";
 }
