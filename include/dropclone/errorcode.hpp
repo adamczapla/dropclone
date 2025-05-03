@@ -41,9 +41,9 @@ struct filesystem {
   static inline std::unordered_map<std::string_view, std::string_view> const messages{
     {could_not_create_directory, "could not create directory: {} |\n↳ origin error: \n\t↳ {}"},
     {failed_to_traverse_directory, "failed to traverse directory: {} in {} |\n↳ origin error: \n\t↳ {}"},
-    {copy_command_failed, "copy_command failed: '{}' → '{}' |\n↳ origin error:\n\t↳ {}"},
-    {rename_command_failed, "rename_command failed: '{}' → '{}' |\n↳ origin error:\n\t↳ {}"},
-    {remove_command_failed, "remove_command failed: '{}' |\n↳ origin error:\n\t↳ {}"}
+    {copy_command_failed, "copy_command ({}): '{}' → '{}' failed |\n↳ origin error:\n\t↳ {}"},
+    {rename_command_failed, "rename_command ({}): '{}' → '{}' failed |\n↳ origin error:\n\t↳ {}"},
+    {remove_command_failed, "remove_command ({}): '{}' → '{}' failed |\n↳ origin error:\n\t↳ {}"}
   };
 };
 
