@@ -81,6 +81,12 @@ class clone_transaction {
 auto clone_transaction::add(clone_command command) -> void { 
   commands_.push_back(command); 
 }
-  
+
+auto create_dirctories(path_snapshot::snapshot_directories const& directories, 
+                       fs::path const& destination_root) -> void;
+
+auto remove_directories(path_snapshot::snapshot_directories const& directories,
+                       fs::path const& source_root) -> void;
+
 } // namespace dropclone
 
