@@ -16,8 +16,7 @@ class drop_clone {
 
  private:
   auto init_config_logger() -> void;
-  auto init_startup_logger() -> void;
-  auto init_daemon_logger() -> void;
+  auto init_sync_logger() -> void;
 
   clone_config clone_config_;
   std::vector<clone_manager> managers_{};
