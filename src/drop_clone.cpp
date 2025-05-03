@@ -27,16 +27,16 @@ drop_clone::drop_clone(fs::path config_path, config_parser parser) {
 
     clone_config_ = parser(config_path);
     logger.get(logger_id::config)->info(
-      utility::formatter<messagecode::logger::config>::format(
-        messagecode::logger::config::config_file_parsed,
+      utility::formatter<messagecode::config>::format(
+        messagecode::config::config_file_parsed,
         config_path.string()
     ));
 
     clone_config_.sanitize(config_path);
     clone_config_.validate();
     logger.get(logger_id::config)->info(
-      utility::formatter<messagecode::logger::config>::format(
-        messagecode::logger::config::config_validated,
+      utility::formatter<messagecode::config>::format(
+        messagecode::config::config_validated,
         clone_config_.entries.size()
     ));
 
@@ -117,8 +117,8 @@ auto drop_clone::init_startup_logger() -> void {
   }());
 
   logger.get(logger_id::config)->info(
-    utility::formatter<messagecode::logger::config>::format(
-      messagecode::logger::config::logging_ready,
+    utility::formatter<messagecode::config>::format(
+      messagecode::config::logging_ready,
       log_file.string()
   ));
 }
@@ -145,8 +145,8 @@ auto drop_clone::init_daemon_logger() -> void {
   }()); 
 
   logger.get(logger_id::config)->info(
-    utility::formatter<messagecode::logger::config>::format(
-      messagecode::logger::config::logging_ready,
+    utility::formatter<messagecode::config>::format(
+      messagecode::config::logging_ready,
       log_file.string()
   ));
 }
