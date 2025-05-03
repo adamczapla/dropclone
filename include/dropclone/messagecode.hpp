@@ -17,4 +17,27 @@ struct config {
   };
 };
 
+struct command {
+  static constexpr auto enter_command    = "command_message.001";
+  static constexpr auto leave_command    = "command_message.002";
+
+  static constexpr auto copy_file        = "command_message.003";
+  static constexpr auto rename_file      = "command_message.004";
+  static constexpr auto remove_file      = "command_message.005";
+
+  static constexpr auto create_directory = "command_message.006";
+  static constexpr auto remove_directory = "command_message.007";
+
+  static inline std::unordered_map<std::string_view, std::string_view> const messages{
+    {enter_command, "Enter {}::{}:"},
+    {leave_command, "Leave {}::{}."},
+    {copy_file, "Copy file '{}' -> '{}'"},
+    {rename_file, "Rename file: '{}' -> '{}'"},
+    {remove_file, "Remove file: '{}'"},
+    {create_directory, "Create directory: '{}'"},
+    {remove_directory, "Remove directory: '{}'"}
+  };
+};
+
+
 } // namespace dropclone::messagecode
