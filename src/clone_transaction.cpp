@@ -13,52 +13,176 @@ namespace dropclone {
 namespace rng = std::ranges;
 namespace fs = std::filesystem;
 
+auto create_dirctories(path_snapshot::snapshot_directories const& directories, 
+                       fs::path const& destination_root) -> void {
+  rng::for_each(directories, [&](auto const& entry) {
+    if(auto const directory = destination_root / entry.first; !fs::exists(directory)) {
+      fs::create_directories(directory);
+      std::cout << "crate directory " << directory << '\n';
+    }
+  });
+}
+
+auto remove_directories(path_snapshot::snapshot_directories const& directories,
+                        fs::path const& source_root) -> void {
+  rng::for_each(rng::crbegin(directories), rng::crend(directories),
+    [&] (auto const& entry) { 
+      auto const directory_path = source_root / entry.first;
+      fs::remove(directory_path);
+      std::cout << "remove directory " << directory_path << '\n';
+  });
+}
+
 auto copy_command::execute() const -> void {
   try {
-    for (auto const& entry : snapshot_.directories()) {
-      std::cout << "copy_command: crate directory " << (destination_root_ / entry.first) 
-                << '\n';
-    }
-    for (auto const& entry : snapshot_.files()) {
-      std::cout << "copy_command: copy from " << (snapshot_.root() / entry.first) 
-                << "to " << (destination_root_ / entry.first) 
-                << '\n';
-    }
+
+    std::cout << "\nBEGIN copy_command::execute\n\n";
+
+    create_dirctories(snapshot_.directories(), destination_root_);
+    rng::for_each(snapshot_.files(), [&](auto const& entry) {
+      auto const from_path = snapshot_.root() / entry.first; 
+      auto const to_path = destination_root_ / entry.first;
+      std::cout << "copy from " << from_path << "to " << to_path << '\n';
+      fs::copy(from_path, to_path, fs::copy_options::skip_existing);
+    });
+
+    std::cout << "\nEND copy_command::execute\n\n";
+
   } catch (fs::filesystem_error const& err) {
     throw_exception<errorcode::filesystem>(
       errorcode::filesystem::copy_command_failed,
-      err.path1().string(),
+      "execute", err.path1().string(),
+      err.path2().string(), 
+      err.what()
+    );
+  }
+}
+
+auto copy_command::undo() const -> void {
+  try {
+
+    std::cout << "\nBEGIN copy_command::undo\n\n";
+
+    rng::for_each(snapshot_.files(), [&](auto const& entry) {
+      auto const entry_path = destination_root_ / entry.first;
+      fs::remove(entry_path);
+      std::cout << "remove " << entry_path << '\n';
+    });
+    remove_directories(snapshot_.directories(), destination_root_);
+
+    std::cout << "\nEND copy_command::undo\n\n";
+
+  } catch (fs::filesystem_error const& err) {
+    throw_exception<errorcode::filesystem>(
+      errorcode::filesystem::copy_command_failed,
+      "undo", err.path1().string(), 
+      err.path2().string(), 
+      err.what()
+    );
+  }
+}
+
+auto rename_command::execute() const -> void {
+  try {
+
+    std::cout << "\nBEGIN rename_command::execute\n\n";
+
+    if (!fs::exists(destination_root_) && !snapshot_.files().empty()) { 
+      fs::create_directory(destination_root_); 
+    }
+
+    create_dirctories(snapshot_.directories(), destination_root_);
+
+    rng::for_each(snapshot_.files(), [&](auto const& entry) {
+      auto const from_path = snapshot_.root() / entry.first;
+      auto const to_path = destination_root_ / entry.first;
+      fs::rename(from_path, to_path);
+      std::cout << "rename from " << from_path 
+                << " to " << to_path << '\n';
+    });
+
+    std::cout << "\nEND rename_command::execute\n\n";
+
+  } catch (fs::filesystem_error const& err) {
+    throw_exception<errorcode::filesystem>(
+      errorcode::filesystem::rename_command_failed,
+      "execute", err.path1().string(),
       err.path2().string(),
       err.what()
     );
   }
 }
-auto copy_command::undo() const -> void {}
 
-auto rename_command::execute() const -> void {
-  for (auto const& entry : snapshot_.directories()) {
-    std::cout << "rename_command: crate directory " << (destination_root_ / entry.first) 
-              << '\n';
-  }
-  for (auto const& entry : snapshot_.files()) {
-    std::cout << "rename_command: rename from " << (snapshot_.root() / entry.first) 
-              << " to " << destination_root_ / entry.first 
-              << '\n';
+auto rename_command::undo() const -> void {
+  try {
+
+    std::cout << "\nBEGIN rename_command::undo\n\n";
+
+    rng::for_each(snapshot_.files(), [&](auto const& entry) {
+      auto const from_path = destination_root_ / entry.first;
+      auto const to_path = snapshot_.root() / entry.first;
+      fs::rename(from_path, to_path);
+      std::cout << "rename from " << from_path 
+                << " to " << to_path << '\n';
+    });
+
+    remove_directories(snapshot_.directories(), destination_root_);
+
+    fs::remove(destination_root_);
+    std::cout << "remove directory: " << destination_root_ << '\n';
+
+    std::cout << "\nEND rename_command::undo\n\n";
+
+  } catch (fs::filesystem_error const& err) {
+    throw_exception<errorcode::filesystem>(
+      errorcode::filesystem::rename_command_failed,
+      "undo", err.path1().string(),
+      err.path2().string(),
+      err.what()
+    );
   }
 }
-auto rename_command::undo() const -> void {}
 
 auto remove_command::execute() const -> void {
-  for (auto const& entry : snapshot_.files()) {
-    std::cout << "remove_command: remove " << (snapshot_.root() / entry.first) 
-              << '\n';
-  }
-  for (auto const& entry : snapshot_.directories()) {
-    std::cout << "remove_command: remove directory " << (snapshot_.root() / entry.first) 
-              << '\n';
+  try {
+
+    std::cout << "\nBEGIN remove_command::execute\n\n";
+
+    rng::for_each(snapshot_.files(), [&](auto const& entry) {
+      auto const entry_path = snapshot_.root() / entry.first;
+      fs::remove(entry_path);
+      std::cout << "remove_command: remove " << entry_path << '\n';
+    });
+
+    remove_directories(snapshot_.directories(), snapshot_.root());
+  
+    if (auto const& root_path = snapshot_.root(); fs::exists(root_path)) {
+      fs::remove(root_path);
+      std::cout << "remove_command: remove directory " << root_path << '\n';
+    }
+
+    std::cout << "\nEND remove_command::execute\n\n";
+
+  } catch (fs::filesystem_error const& err) {
+    throw_exception<errorcode::filesystem>(
+      errorcode::filesystem::remove_command_failed,
+      "execute", err.path1().string(),
+      err.what()
+    );
   }
 }
-auto remove_command::undo() const -> void {}
+
+auto remove_command::undo() const -> void {
+  try {
+
+  } catch (fs::filesystem_error const& err) {
+    throw_exception<errorcode::filesystem>(
+      errorcode::filesystem::remove_command_failed,
+      "undo", err.path1().string(),
+      err.what()
+    );
+  }
+}
 
 auto clone_transaction::start() -> void {
   if (commands_.empty()) { return; }
