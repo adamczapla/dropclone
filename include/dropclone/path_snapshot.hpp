@@ -31,9 +31,11 @@ namespace dropclone {
     inline auto files() const noexcept -> snapshot_entries const&;
     inline auto directories() const noexcept -> snapshot_directories const&;
 
+    inline auto files() noexcept -> snapshot_entries&;
+    inline auto directories() noexcept -> snapshot_directories&;
+
     auto add_files(snapshot_entries const& files, entry_filter filter) -> void;
     auto add_directories(snapshot_directories const& directories, entry_filter filter) -> void;
-    inline auto clear_directories() -> void;
 
     auto rebase(fs::path const& new_root) -> void;
   
@@ -52,8 +54,10 @@ namespace dropclone {
   auto path_snapshot::root() const noexcept -> fs::path { return root_; }
   auto path_snapshot::hash() const noexcept -> size_t { return hash_; }
   auto path_snapshot::entries() const noexcept -> snapshot_entries const& { return entries_; }
-  auto path_snapshot::files() const noexcept -> snapshot_entries const& { return files_; }
-  auto path_snapshot::directories() const noexcept -> snapshot_directories const& { return directories_; }
-  auto path_snapshot::clear_directories() -> void { snapshot_directories{}.swap(directories_); }
 
+  auto path_snapshot::files() const noexcept -> snapshot_entries const& { return files_; }
+  auto path_snapshot::files() noexcept -> snapshot_entries& { return files_; }
+
+  auto path_snapshot::directories() const noexcept -> snapshot_directories const& { return directories_; }
+  auto path_snapshot::directories() noexcept -> snapshot_directories& { return directories_; }
 } // namespace dropclone
