@@ -17,6 +17,8 @@ concept is_clone_command = requires (clone_command command) {
   {command.undo()} -> std::same_as<void>;
 };
 
+enum class command_status {success, partial_success, failure};
+
 class copy_command {
  public:
   copy_command(path_snapshot snapshot, fs::path destination_root) 
@@ -24,12 +26,14 @@ class copy_command {
       destination_root_{std::move(destination_root)} 
   {}
 
-  auto execute() const -> void;
-  auto undo() const -> void;
+  auto execute() -> void;
+  auto undo() -> void;
 
  private:
   path_snapshot snapshot_;
   fs::path destination_root_;
+  command_status undo_status_{command_status::success};
+  command_status execute_status_{command_status::failure};
 };
 
 class rename_command {
@@ -39,12 +43,14 @@ class rename_command {
       destination_root_{std::move(destination_root)} 
   {}
 
-  auto execute() const -> void;
-  auto undo() const -> void;
+  auto execute() -> void;
+  auto undo() -> void;
 
  private:
   path_snapshot snapshot_;
   fs::path destination_root_;
+  command_status undo_status_{command_status::success};
+  command_status execute_status_{command_status::failure};
 };
 
 class remove_command {
@@ -53,11 +59,13 @@ class remove_command {
     : snapshot_{std::move(snapshot)} 
   {}
 
-  auto execute() const -> void;
-  auto undo() const -> void;
+  auto execute() -> void;
+  auto undo() -> void;
 
  private:
   path_snapshot snapshot_;
+  command_status undo_status_{command_status::success};
+  command_status execute_status_{command_status::failure};
 };
 
 static_assert(is_clone_command<copy_command>);
@@ -82,11 +90,11 @@ auto clone_transaction::add(clone_command command) -> void {
   commands_.push_back(command); 
 }
 
-auto create_dirctories(path_snapshot::snapshot_directories const& directories, 
-                       fs::path const& destination_root) -> void;
+auto create_directories(path_snapshot::snapshot_directories const& directories, 
+                        fs::path const& destination_root) -> void;
 
 auto remove_directories(path_snapshot::snapshot_directories const& directories,
-                       fs::path const& source_root) -> void;
+                        fs::path const& source_root) -> void;
 
 } // namespace dropclone
 
