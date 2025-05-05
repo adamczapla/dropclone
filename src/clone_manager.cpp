@@ -3,9 +3,8 @@
 #include <dropclone/path_snapshot.hpp>
 #include <dropclone/exception.hpp>
 #include <dropclone/clone_transaction.hpp>
+#include <dropclone/logger_manager.hpp>
 #include <filesystem>
-
-#include <iostream> // do not forget to remove it
 
 namespace dropclone {
 
@@ -39,7 +38,6 @@ auto clone_manager::copy(path_snapshot const& source_snapshot, fs::path const& d
   auto const backup_path = destination_root / fs::path{".backup"};
   rename_command rename_updated_paths{renamed_paths, backup_path}; 
 
-  updated_paths.clear_directories();
   copy_command copy_updated_paths{updated_paths, destination_root};
   renamed_paths.rebase(backup_path);
   remove_command remove_renamed_paths{renamed_paths};
@@ -49,11 +47,14 @@ auto clone_manager::copy(path_snapshot const& source_snapshot, fs::path const& d
   copy_transaction.add(rename_updated_paths);
   copy_transaction.add(copy_updated_paths);
   copy_transaction.add(remove_renamed_paths);
+
   try {
     copy_transaction.start();
   } catch (dropclone::exception const& err) {
     //
   }
+
+  logger.get(logger_id::sync)->flush();
 }
 auto clone_manager::remove(path_snapshot const& snapshot) -> void {}
 
@@ -75,7 +76,9 @@ auto clone_manager::sync() -> void {
     source_snapshot_ = std::move(current_source_snapshot);
 
   } catch (dc::exception const& e) {
-    std::cerr << e.what() << '\n';
+    logger.get(logger_id::sync)->error(
+      e.what()
+    );
   }
 }
 
