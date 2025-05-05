@@ -45,11 +45,13 @@ struct command {
   static constexpr auto copy_command_failed           = "command_error.001";
   static constexpr auto rename_command_failed         = "command_error.002";
   static constexpr auto remove_command_failed         = "command_error.003";
+  static constexpr auto remove_command_cleanup_failed = "command_error.004";
   
   static inline std::unordered_map<std::string_view, std::string_view> const messages{
     {copy_command_failed, "copy_command::{}: '{}' → '{}' failed |\n↳ origin error:\n\t↳ {}"},
     {rename_command_failed, "rename_command::{}: '{}' → '{}' failed |\n↳ origin error:\n\t↳ {}"},
-    {remove_command_failed, "remove_command::{}: '{}' failed |\n↳ origin error:\n\t↳ {}"}
+    {remove_command_failed, "remove_command::{}: '{}' failed |\n↳ origin error:\n\t↳ {}"},
+    {remove_command_cleanup_failed, "remove_command::{}: '{}' failed |\n↳ origin error:\n\t↳ {}"}
   };
 };
 
