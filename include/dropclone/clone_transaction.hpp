@@ -6,6 +6,7 @@
 #include <stack>
 #include <vector> 
 #include <utility>
+#include <string_view>
 
 namespace dropclone {
 
@@ -90,11 +91,34 @@ auto clone_transaction::add(clone_command command) -> void {
   commands_.push_back(command); 
 }
 
-auto create_directories(path_snapshot::snapshot_directories const& directories, 
-                        fs::path const& destination_root) -> void;
+auto log_enter_command(std::string_view command_name, std::string_view function_name) -> void;
+auto log_leave_command(std::string_view command_name, std::string_view function_name) -> void;
 
-auto remove_directories(path_snapshot::snapshot_directories const& directories,
-                        fs::path const& source_root) -> void;
+auto create_directory(fs::path const& directory_path) -> void;
+auto remove_directory(fs::path const& directory_path) -> void;
+
+auto create_directories(path_snapshot::snapshot_directories& directories, 
+                        fs::path const& destination_root,
+                        bool extract_on_success = false) -> void;
+
+auto remove_directories(path_snapshot::snapshot_directories& directories,
+                        fs::path const& source_root,
+                        bool extract_on_success = false) -> void;
+        
+auto copy_files(path_snapshot::snapshot_entries& files, 
+                fs::path const& source_root, 
+                fs::path const& destination_root,
+                bool extract_on_success = false, 
+                fs::copy_options options = {}) -> void;
+
+auto rename_files(path_snapshot::snapshot_entries& files, 
+                  fs::path const& source_root, 
+                  fs::path const& destination_root,
+                  bool extract_on_success = false) -> void;
+
+auto remove_files(path_snapshot::snapshot_entries& files, 
+                  fs::path const& source_root,
+                  bool extract_on_success = false) -> void;
 
 } // namespace dropclone
 
