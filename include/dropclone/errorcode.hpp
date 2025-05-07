@@ -45,23 +45,27 @@ struct command {
   static constexpr auto copy_command_failed           = "command_error.001";
   static constexpr auto rename_command_failed         = "command_error.002";
   static constexpr auto remove_command_failed         = "command_error.003";
-  static constexpr auto remove_command_cleanup_failed = "command_error.004";
   
   static inline std::unordered_map<std::string_view, std::string_view> const messages{
     {copy_command_failed, "copy_command::{}: '{}' → '{}' failed |\n↳ origin error:\n\t↳ {}"},
     {rename_command_failed, "rename_command::{}: '{}' → '{}' failed |\n↳ origin error:\n\t↳ {}"},
-    {remove_command_failed, "remove_command::{}: '{}' failed |\n↳ origin error:\n\t↳ {}"},
-    {remove_command_cleanup_failed, "remove_command::{}: '{}' failed |\n↳ origin error:\n\t↳ {}"}
+    {remove_command_failed, "remove_command::{}: '{}' failed |\n↳ origin error:\n\t↳ {}"}
   };
 };
 
 struct transaction {
-  static constexpr auto start_failed    = "transaction_error.001";
-  static constexpr auto rollback_failed = "transaction_error.002";
+  static constexpr auto start_failed            = "transaction_error.001";
+  static constexpr auto rollback_failed         = "transaction_error.002";
+  static constexpr auto unrecovered_entries     = "transaction_error.003";
+  static constexpr auto unrecovered_file        = "transaction_error.004";
+  static constexpr auto unrecovered_directory   = "transaction_error.005";
 
   static inline std::unordered_map<std::string_view, std::string_view> const messages{
     {start_failed, "transaction failed and was rolled back |\n↳ origin error:\n\t↳ {}"},
-    {rollback_failed, "rollback failed – system may be inconsistent |\n↳ origin error:\n\t↳ {}"}
+    {rollback_failed, "rollback failed – system may be inconsistent |\n↳ origin error:\n\t↳ {}"},
+    {unrecovered_entries, "Unrecovered entries remain in snapshot '{}'"},
+    {unrecovered_file, "Unrecovered file: '{}'"},
+    {unrecovered_directory, "Unrecovered directory: '{}'"}
   };
 };
 
