@@ -179,6 +179,17 @@ auto copy_command::execute() -> void {
   try {
     log_enter_command("copy_command", "execute");
 
+    if (execute_status_ == command_status::failure ||
+        undo_status_ == command_status::failure) {
+      logger.get(logger_id::sync)->warn(
+        utility::formatter<messagecode::command>::format(
+          messagecode::command::execute_skipped,
+          "copy_command"
+      ));
+      log_leave_command("copy_command", "execute");
+      return;
+    }
+
     create_directories(snapshot_.directories(), destination_root_);
     copy_files(snapshot_.files(), snapshot_.root(), destination_root_);
 
@@ -221,13 +232,13 @@ auto copy_command::undo() -> void {
   try {
     log_enter_command("copy_command", "undo");
 
-    if (execute_status_ == command_status::unspecified) {
+    if (execute_status_ != command_status::failure ||
+        undo_status_ == command_status::success) {
       logger.get(logger_id::sync)->warn(
         utility::formatter<messagecode::command>::format(
-          messagecode::command::undo_before_execute,
+          messagecode::command::undo_skipped,
           "copy_command"
       ));
-
       log_leave_command("copy_command", "undo");
       return;
     }
@@ -262,6 +273,17 @@ auto copy_command::undo() -> void {
 auto rename_command::execute() -> void {
   try {
     log_enter_command("rename_command", "execute");
+
+    if (execute_status_ == command_status::failure ||
+        undo_status_ == command_status::failure) {
+      logger.get(logger_id::sync)->warn(
+        utility::formatter<messagecode::command>::format(
+          messagecode::command::execute_skipped,
+          "rename_command"
+      ));
+      log_leave_command("rename_command", "execute");
+      return;
+    }
 
     auto& files = snapshot_.files();
     auto& directories = snapshot_.directories();
@@ -320,13 +342,13 @@ auto rename_command::undo() -> void {
   try {
     log_enter_command("rename_command", "undo");
 
-    if (execute_status_ == command_status::unspecified) {
+    if (execute_status_ != command_status::failure ||
+        undo_status_ == command_status::success) {
       logger.get(logger_id::sync)->warn(
         utility::formatter<messagecode::command>::format(
-          messagecode::command::undo_before_execute,
+          messagecode::command::undo_skipped,
           "rename_command"
       ));
-
       log_leave_command("rename_command", "undo");
       return;
     }
@@ -361,6 +383,17 @@ auto rename_command::undo() -> void {
 auto remove_command::execute() -> void {
   try {
     log_enter_command("remove_command", "execute");
+
+    if (execute_status_ == command_status::failure ||
+        undo_status_ == command_status::failure) {
+      logger.get(logger_id::sync)->warn(
+        utility::formatter<messagecode::command>::format(
+          messagecode::command::execute_skipped,
+          "remove_command"
+      ));
+      log_leave_command("remove_command", "execute");
+      return;
+    }
 
     if (!fs::exists(snapshot_.root())) { 
       logger.get(logger_id::sync)->debug(
@@ -428,13 +461,13 @@ auto remove_command::undo() -> void {
   try {
     log_enter_command("remove_command", "undo");
 
-    if (execute_status_ == command_status::unspecified) {
+    if (execute_status_ != command_status::failure ||
+        undo_status_ == command_status::success) {
       logger.get(logger_id::sync)->warn(
         utility::formatter<messagecode::command>::format(
-          messagecode::command::undo_before_execute,
+          messagecode::command::undo_skipped,
           "remove_command"
       ));
-
       log_leave_command("remove_command", "undo");
       return;
     }
@@ -532,6 +565,15 @@ auto clone_transaction::reset() -> void {
   decltype(commands_){}.swap(commands_);
 }
 
+auto clone_transaction::reset_command_statuses() -> void {
+  rng::for_each(commands_, [&](auto& command) {
+    std::visit([](auto& cmd) {
+      cmd.execute_status_ = command_status::uninitialized;
+      cmd.undo_status_ = command_status::uninitialized;
+    }, command);
+  });
+}
+
 auto clone_transaction::start() -> void {
   if (commands_.empty()) { return; }
 
@@ -569,6 +611,8 @@ auto clone_transaction::start() -> void {
         err.what()
       );
     } 
+    
+    reset_command_statuses();
 
     throw_exception<errorcode::transaction>(
       errorcode::transaction::start_failed,
