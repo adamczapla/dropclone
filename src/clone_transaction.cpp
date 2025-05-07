@@ -5,6 +5,9 @@
 #include <dropclone/errorcode.hpp>
 #include <dropclone/messagecode.hpp>
 #include <dropclone/exception.hpp>
+#include <chrono>
+#include <cstdint>
+#include <thread>
 #include <filesystem>
 #include <variant>
 #include <stdexcept>
@@ -185,10 +188,30 @@ auto copy_command::execute() -> void {
   } catch (fs::filesystem_error const& err) {
     execute_status_ = command_status::failure; 
 
+    logger.get(logger_id::sync)->error(
+      utility::formatter<errorcode::command>::format(
+        errorcode::command::copy_command_failed,
+        "execute", err.path1().string(),
+        err.path2().string(), 
+        err.what()
+    ));
+
     throw_exception<errorcode::command>(
       errorcode::command::copy_command_failed,
       "execute", err.path1().string(),
       err.path2().string(), 
+      err.what()
+    );
+  } catch (std::exception const& err) {
+    execute_status_ = command_status::failure; 
+
+    logger.get(logger_id::sync)->error(
+      errorcode::system::unhandled_std_exception,
+      err.what()
+    );
+
+    throw_exception<errorcode::system>(
+      errorcode::system::unhandled_std_exception,
       err.what()
     );
   }
@@ -198,7 +221,7 @@ auto copy_command::undo() -> void {
   try {
     log_enter_command("copy_command", "undo");
 
-    if (execute_status_ == command_status::failure) {
+    if (execute_status_ == command_status::unspecified) {
       logger.get(logger_id::sync)->warn(
         utility::formatter<messagecode::command>::format(
           messagecode::command::undo_before_execute,
@@ -263,10 +286,31 @@ auto rename_command::execute() -> void {
   } catch (fs::filesystem_error const& err) {
     execute_status_ = command_status::failure; 
 
+    logger.get(logger_id::sync)->error(
+      utility::formatter<errorcode::command>::format(
+        errorcode::command::rename_command_failed,
+        "execute", err.path1().string(),
+        err.path2().string(),
+        err.what()
+    ));
+
     throw_exception<errorcode::command>(
       errorcode::command::rename_command_failed,
       "execute", err.path1().string(),
       err.path2().string(),
+      err.what()
+    );
+  } catch (std::exception const& err) {
+    execute_status_ = command_status::failure; 
+
+    logger.get(logger_id::sync)->error(
+      utility::formatter<errorcode::system>::format(
+        errorcode::system::unhandled_std_exception,
+        err.what()
+    ));
+
+    throw_exception<errorcode::system>(
+      errorcode::system::unhandled_std_exception,
       err.what()
     );
   }
@@ -276,7 +320,7 @@ auto rename_command::undo() -> void {
   try {
     log_enter_command("rename_command", "undo");
 
-    if (execute_status_ == command_status::failure) {
+    if (execute_status_ == command_status::unspecified) {
       logger.get(logger_id::sync)->warn(
         utility::formatter<messagecode::command>::format(
           messagecode::command::undo_before_execute,
@@ -340,31 +384,41 @@ auto remove_command::execute() -> void {
 
     execute_status_ = command_status::success; 
 
-    try {
-      logger.get(logger_id::sync)->info(
-        utility::formatter<messagecode::command>::format(
-          messagecode::command::remove_directory,
-          snapshot_.root().string()
-      ));
+    logger.get(logger_id::sync)->info(
+      utility::formatter<messagecode::command>::format(
+        messagecode::command::remove_directory,
+        snapshot_.root().string()
+    ));
 
-      fs::remove_all(snapshot_.root());
-    } catch (fs::filesystem_error const& err) {
-      execute_status_ = command_status::partial_success;
-
-      logger.get(logger_id::sync)->warn(
-        errorcode::command::remove_command_cleanup_failed,
-        "execute", trash_path.string(), 
-        err.what()
-      );
-    }
+    fs::remove_all(snapshot_.root());
 
     log_leave_command("remove_command", "execute");
   } catch (fs::filesystem_error const& err) {
     execute_status_ = command_status::failure; 
 
+    logger.get(logger_id::sync)->error(
+      utility::formatter<errorcode::command>::format(
+        errorcode::command::remove_command_failed,
+        "execute", err.path1().string(),
+        err.what()
+    ));
+
     throw_exception<errorcode::command>(
       errorcode::command::remove_command_failed,
       "execute", err.path1().string(),
+      err.what()
+    );
+  } catch (std::exception const& err) {
+    execute_status_ = command_status::failure; 
+
+    logger.get(logger_id::sync)->error(
+      utility::formatter<errorcode::system>::format(
+        errorcode::system::unhandled_std_exception,
+        err.what()
+    ));
+
+    throw_exception<errorcode::system>(
+      errorcode::system::unhandled_std_exception,
       err.what()
     );
   }
@@ -374,7 +428,7 @@ auto remove_command::undo() -> void {
   try {
     log_enter_command("remove_command", "undo");
 
-    if (execute_status_ != command_status::success) {
+    if (execute_status_ == command_status::unspecified) {
       logger.get(logger_id::sync)->warn(
         utility::formatter<messagecode::command>::format(
           messagecode::command::undo_before_execute,
@@ -400,23 +454,13 @@ auto remove_command::undo() -> void {
     create_directories(snapshot_.directories(), snapshot_.root(), true);
     copy_files(snapshot_.files(), trash_path, snapshot_.root(), true);
 
-    try {
-      logger.get(logger_id::sync)->info(
-        utility::formatter<messagecode::command>::format(
-          messagecode::command::remove_directory,
-          trash_path.string()
-      ));
+    logger.get(logger_id::sync)->info(
+      utility::formatter<messagecode::command>::format(
+        messagecode::command::remove_directory,
+        trash_path.string()
+    ));
 
-      fs::remove_all(trash_path);
-    } catch (fs::filesystem_error const& err) {
-      undo_status_ = command_status::partial_success;
-
-      logger.get(logger_id::sync)->warn(
-        errorcode::command::remove_command_cleanup_failed,
-        "execute", trash_path.string(), 
-        err.what()
-      );
-    }
+    fs::remove_all(trash_path);
 
     undo_status_ = command_status::success;
 
@@ -441,34 +485,102 @@ auto remove_command::undo() -> void {
   }
 }
 
+auto clone_transaction::try_undo(clone_command command, 
+                                 std::uint8_t max_retries) -> void {
+  std::visit([&](auto& cmd) { 
+      cmd.undo(); 
+      for (uint8_t retries{0}; cmd.undo_status_ == command_status::failure && 
+                               retries != max_retries; ++retries) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        cmd.undo();
+      }
+  }, command);
+}
+
+auto clone_transaction::log_unrecovered_entries() -> void {
+  rng::for_each(commands_, [&](auto& command) {
+    std::visit([](auto& cmd) {
+      if (cmd.undo_status_ == command_status::failure) {
+        logger.get(logger_id::sync)->error(
+          utility::formatter<errorcode::transaction>::format(
+            errorcode::transaction::unrecovered_entries,
+            cmd.snapshot_.root().string()
+        ));
+  
+        rng::for_each(cmd.snapshot_.files(), [](auto const& file) {
+          logger.get(logger_id::sync)->error(
+            utility::formatter<errorcode::transaction>::format(
+              errorcode::transaction::unrecovered_file,
+              file.first.string()
+          ));
+        });
+  
+        rng::for_each(cmd.snapshot_.directories(), [](auto const& directory) {
+          logger.get(logger_id::sync)->error(
+            utility::formatter<errorcode::transaction>::format(
+              errorcode::transaction::unrecovered_file,
+              directory.first.string()
+          ));
+        });
+      }
+    }, command);
+  });
+}
+
+auto clone_transaction::reset() -> void {
+  decltype(processed_commands_){}.swap(processed_commands_);
+  decltype(commands_){}.swap(commands_);
+}
+
 auto clone_transaction::start() -> void {
   if (commands_.empty()) { return; }
-  rng::for_each(commands_, [&](auto& command) {
-    try {
-      std::visit([](auto& cmd) { cmd.execute(); }, command);
-      processed_commands_.push(command);
-    } catch (std::exception const& err) {
-      std::visit([](auto& cmd) { cmd.undo(); }, command);
+
+  try {
+    rng::for_each(commands_, [&](auto& command) {
       try {
-        rollback();
-      } catch (std::exception const& rollback_err) {
-        throw_exception<errorcode::transaction>(
-          errorcode::transaction::rollback_failed,
-          rollback_err.what()
-        );
+        std::visit([](auto& cmd) { cmd.execute(); }, command);
+        processed_commands_.push(command);
+      } catch (dc::exception const& err) {
+        try_undo(command, 3);
+        throw;
       }
+    });
+  } catch (dc::exception const& err) {
+    rollback();
+
+    auto has_failure = rng::any_of(commands_, [](auto const& command) {
+      return std::visit([](auto const& cmd) { 
+        return cmd.undo_status_ == command_status::failure;
+      }, command);
+    });
+
+    if (has_failure) {
+      logger.get(logger_id::sync)->error(
+        utility::formatter<errorcode::transaction>::format(
+          errorcode::transaction::rollback_failed,
+          err.what()
+      ));
+
+      log_unrecovered_entries();
+      reset();
+
       throw_exception<errorcode::transaction>(
-        errorcode::transaction::start_failed,
+        errorcode::transaction::rollback_failed,
         err.what()
       );
-    }
-  });
+    } 
+
+    throw_exception<errorcode::transaction>(
+      errorcode::transaction::start_failed,
+      err.what()
+    );
+  }
 }
 
 auto clone_transaction::rollback() -> void {
   while (!processed_commands_.empty()) {
     auto command = processed_commands_.top();
-    std::visit([](auto& cmd) { cmd.undo(); }, command);
+    try_undo(command, 1);
     processed_commands_.pop();
   }
 }
