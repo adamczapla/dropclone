@@ -7,18 +7,21 @@
 #include <vector> 
 #include <utility>
 #include <string_view>
+#include <cstdint>
 
 namespace dropclone {
 
 namespace fs = std::filesystem;
 
-template <typename clone_command>
-concept is_clone_command = requires (clone_command command) {
+template <typename command_type>
+concept is_clone_command = requires (command_type command) {
   {command.execute()} -> std::same_as<void>;
   {command.undo()} -> std::same_as<void>;
 };
 
-enum class command_status {success, partial_success, failure};
+enum class command_status {unspecified, success, failure};
+
+class clone_transaction;
 
 class copy_command {
  public:
@@ -33,8 +36,10 @@ class copy_command {
  private:
   path_snapshot snapshot_;
   fs::path destination_root_;
+  command_status execute_status_{command_status::unspecified};
   command_status undo_status_{command_status::success};
-  command_status execute_status_{command_status::failure};
+
+  friend class clone_transaction;
 };
 
 class rename_command {
@@ -50,8 +55,10 @@ class rename_command {
  private:
   path_snapshot snapshot_;
   fs::path destination_root_;
+  command_status execute_status_{command_status::unspecified};
   command_status undo_status_{command_status::success};
-  command_status execute_status_{command_status::failure};
+
+  friend class clone_transaction;
 };
 
 class remove_command {
@@ -65,8 +72,10 @@ class remove_command {
 
  private:
   path_snapshot snapshot_;
+  command_status execute_status_{command_status::unspecified};
   command_status undo_status_{command_status::success};
-  command_status execute_status_{command_status::failure};
+
+  friend class clone_transaction;
 };
 
 static_assert(is_clone_command<copy_command>);
@@ -84,11 +93,14 @@ class clone_transaction {
   std::vector<clone_command> commands_{};
   std::stack<clone_command> processed_commands_{};
 
+  auto try_undo(clone_command command, std::uint8_t max_retries) -> void;
+  auto log_unrecovered_entries() -> void;
   auto rollback() -> void;
+  auto reset() -> void;
 };
 
 auto clone_transaction::add(clone_command command) -> void { 
-  commands_.push_back(command); 
+  commands_.push_back(std::move(command)); 
 }
 
 auto log_enter_command(std::string_view command_name, std::string_view function_name) -> void;
