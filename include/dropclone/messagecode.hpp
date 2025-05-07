@@ -28,7 +28,9 @@ struct command {
   static constexpr auto create_directory = "command_message.006";
   static constexpr auto remove_directory = "command_message.007";
 
-  static constexpr auto undo_before_execute = "command_message.008";
+  static constexpr auto execute_skipped  = "command_message.008";
+  static constexpr auto undo_skipped     = "command_message.009";
+
   static inline std::unordered_map<std::string_view, std::string_view> const messages{
     {enter_command, "Enter {}::{}:"},
     {leave_command, "Leave {}::{}."},
@@ -37,7 +39,8 @@ struct command {
     {remove_file, "Remove file: '{}'"},
     {create_directory, "Create directory: '{}'"},
     {remove_directory, "Remove directory: '{}'"},
-    {undo_before_execute, "'{0}::undo' called before successful '{0}::execute'"}
+    {execute_skipped, "'{}::execute' skipped due to unsafe state"},
+    {undo_skipped, "'{}::undo' skipped – no recovery required"}
   };
 };
 
