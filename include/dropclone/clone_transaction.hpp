@@ -19,7 +19,7 @@ concept is_clone_command = requires (command_type command) {
   {command.undo()} -> std::same_as<void>;
 };
 
-enum class command_status {unspecified, success, failure};
+enum class command_status {uninitialized, success, failure};
 
 class clone_transaction;
 
@@ -36,8 +36,8 @@ class copy_command {
  private:
   path_snapshot snapshot_;
   fs::path destination_root_;
-  command_status execute_status_{command_status::unspecified};
-  command_status undo_status_{command_status::success};
+  command_status execute_status_{command_status::uninitialized};
+  command_status undo_status_{command_status::uninitialized};
 
   friend class clone_transaction;
 };
@@ -55,8 +55,8 @@ class rename_command {
  private:
   path_snapshot snapshot_;
   fs::path destination_root_;
-  command_status execute_status_{command_status::unspecified};
-  command_status undo_status_{command_status::success};
+  command_status execute_status_{command_status::uninitialized};
+  command_status undo_status_{command_status::uninitialized};
 
   friend class clone_transaction;
 };
@@ -72,8 +72,8 @@ class remove_command {
 
  private:
   path_snapshot snapshot_;
-  command_status execute_status_{command_status::unspecified};
-  command_status undo_status_{command_status::success};
+  command_status execute_status_{command_status::uninitialized};
+  command_status undo_status_{command_status::uninitialized};
 
   friend class clone_transaction;
 };
@@ -95,6 +95,7 @@ class clone_transaction {
 
   auto try_undo(clone_command command, std::uint8_t max_retries) -> void;
   auto log_unrecovered_entries() -> void;
+  auto reset_command_statuses() -> void;
   auto rollback() -> void;
   auto reset() -> void;
 };
