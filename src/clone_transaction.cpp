@@ -12,6 +12,7 @@
 #include <variant>
 #include <stdexcept>
 #include <algorithm>
+#include <functional>
 
 namespace dropclone {
 
@@ -175,41 +176,42 @@ auto remove_files(path_snapshot::snapshot_entries& files,
   });
 }
 
-auto copy_command::execute() -> void {
+auto command_base::execute(std::string_view command_name, 
+                           std::string_view errorcode, 
+                           std::function<void(void)> execute) -> void {
   try {
-    log_enter_command("copy_command", "execute");
+    log_enter_command(command_name, "execute");
 
     if (execute_status_ == command_status::failure ||
         undo_status_ == command_status::failure) {
       logger.get(logger_id::sync)->warn(
         utility::formatter<messagecode::command>::format(
           messagecode::command::execute_skipped,
-          "copy_command"
+          command_name
       ));
-      log_leave_command("copy_command", "execute");
+  
+      log_leave_command(command_name, "execute");
+
       return;
     }
-
-    create_directories(snapshot_.directories(), destination_root_);
-    copy_files(snapshot_.files(), snapshot_.root(), destination_root_);
+  
+    execute();
 
     execute_status_ = command_status::success; 
 
-    log_leave_command("copy_command", "execute");
+    log_leave_command(command_name, "execute");
   } catch (fs::filesystem_error const& err) {
     execute_status_ = command_status::failure; 
 
     logger.get(logger_id::sync)->error(
       utility::formatter<errorcode::command>::format(
-        errorcode::command::copy_command_failed,
-        "execute", err.path1().string(),
+        errorcode, "execute", err.path1().string(),
         err.path2().string(), 
         err.what()
     ));
 
     throw_exception<errorcode::command>(
-      errorcode::command::copy_command_failed,
-      "execute", err.path1().string(),
+      errorcode, "execute", err.path1().string(),
       err.path2().string(), 
       err.what()
     );
@@ -228,34 +230,37 @@ auto copy_command::execute() -> void {
   }
 }
 
-auto copy_command::undo() -> void {
+
+auto command_base::undo(std::string_view command_name, 
+                        std::string_view errorcode,
+                        std::function<void(void)> undo) -> void {
   try {
-    log_enter_command("copy_command", "undo");
+    log_enter_command(command_name, "undo");
 
     if (execute_status_ == command_status::uninitialized ||
         undo_status_ == command_status::success) {
       logger.get(logger_id::sync)->warn(
         utility::formatter<messagecode::command>::format(
           messagecode::command::undo_skipped,
-          "copy_command"
+          command_name
       ));
-      log_leave_command("copy_command", "undo");
+
+      log_leave_command(command_name, "undo");
+
       return;
     }
 
-    remove_files(snapshot_.files(), destination_root_, true);
-    remove_directories(snapshot_.directories(), destination_root_, true);
+    undo();
 
     undo_status_ = command_status::success;
 
-    log_leave_command("copy_command", "undo");
+    log_leave_command(command_name, "undo");
   } catch (fs::filesystem_error const& err) {
     undo_status_ = command_status::failure;
 
     logger.get(logger_id::sync)->error(
       utility::formatter<errorcode::command>::format(
-        errorcode::command::copy_command_failed,
-        "undo", err.path1().string(), 
+        errorcode, "undo", err.path1().string(), 
         err.path2().string(), 
         err.what()
     ));
@@ -268,254 +273,122 @@ auto copy_command::undo() -> void {
         err.what()
     ));
   }
+}
+
+auto copy_command::execute() -> void {
+  command_base::execute("copy_command", errorcode::command::copy_command_failed, 
+    [&] {
+      create_directories(snapshot_.directories(), destination_root_);
+      copy_files(snapshot_.files(), snapshot_.root(), destination_root_);
+    }
+  );
+}
+
+auto copy_command::undo() -> void {
+  command_base::undo("copy_command", errorcode::command::copy_command_failed,
+    [&] {
+      remove_files(snapshot_.files(), destination_root_, true);
+      remove_directories(snapshot_.directories(), destination_root_, true);
+    }
+  );
 }
 
 auto rename_command::execute() -> void {
-  try {
-    log_enter_command("rename_command", "execute");
-
-    if (execute_status_ == command_status::failure ||
-        undo_status_ == command_status::failure) {
-      logger.get(logger_id::sync)->warn(
-        utility::formatter<messagecode::command>::format(
-          messagecode::command::execute_skipped,
-          "rename_command"
-      ));
-      log_leave_command("rename_command", "execute");
-      return;
+  command_base::execute("rename_command", errorcode::command::rename_command_failed, 
+    [&] {
+      auto& files = snapshot_.files();
+      auto& directories = snapshot_.directories();
+  
+      if (files.empty() && directories.empty()) { 
+        logger.get(logger_id::sync)->debug(
+          utility::formatter<messagecode::command>::format(
+            messagecode::command::leave_command, 
+            "rename_command", "execute"
+        ));
+  
+        return; 
+      }
+  
+      dc::create_directory(destination_root_);
+      create_directories(directories, destination_root_);
+      rename_files(files, snapshot_.root(), destination_root_);
     }
-
-    auto& files = snapshot_.files();
-    auto& directories = snapshot_.directories();
-
-    if (files.empty() && directories.empty()) { 
-      logger.get(logger_id::sync)->debug(
-        utility::formatter<messagecode::command>::format(
-          messagecode::command::leave_command, 
-          "rename_command", "execute"
-      ));
-
-      return; 
-    }
-
-    dc::create_directory(destination_root_);
-    create_directories(directories, destination_root_);
-    rename_files(files, snapshot_.root(), destination_root_);
-
-    execute_status_ = command_status::success; 
-
-    log_leave_command("rename_command", "execute");
-  } catch (fs::filesystem_error const& err) {
-    execute_status_ = command_status::failure; 
-
-    logger.get(logger_id::sync)->error(
-      utility::formatter<errorcode::command>::format(
-        errorcode::command::rename_command_failed,
-        "execute", err.path1().string(),
-        err.path2().string(),
-        err.what()
-    ));
-
-    throw_exception<errorcode::command>(
-      errorcode::command::rename_command_failed,
-      "execute", err.path1().string(),
-      err.path2().string(),
-      err.what()
-    );
-  } catch (std::exception const& err) {
-    execute_status_ = command_status::failure; 
-
-    logger.get(logger_id::sync)->error(
-      utility::formatter<errorcode::system>::format(
-        errorcode::system::unhandled_std_exception,
-        err.what()
-    ));
-
-    throw_exception<errorcode::system>(
-      errorcode::system::unhandled_std_exception,
-      err.what()
-    );
-  }
+  );
 }
 
 auto rename_command::undo() -> void {
-  try {
-    log_enter_command("rename_command", "undo");
-
-    if (execute_status_ == command_status::uninitialized ||
-        undo_status_ == command_status::success) {
-      logger.get(logger_id::sync)->warn(
-        utility::formatter<messagecode::command>::format(
-          messagecode::command::undo_skipped,
-          "rename_command"
-      ));
-      log_leave_command("rename_command", "undo");
-      return;
+  command_base::undo("rename_command", errorcode::command::rename_command_failed,
+    [&] {
+      rename_files(snapshot_.files(), destination_root_, snapshot_.root(), true);
+      remove_directories(snapshot_.directories(), destination_root_, true);
+      remove_directory(destination_root_);
     }
-
-    rename_files(snapshot_.files(), destination_root_, snapshot_.root(), true);
-    remove_directories(snapshot_.directories(), destination_root_, true);
-    remove_directory(destination_root_);
-    
-    undo_status_ = command_status::success;
-
-    log_leave_command("rename_command", "undo");
-  } catch (fs::filesystem_error const& err) {
-    undo_status_ = command_status::failure;
-    logger.get(logger_id::sync)->error(
-      utility::formatter<errorcode::command>::format(
-        errorcode::command::rename_command_failed,
-        "undo", err.path1().string(), 
-        err.path2().string(), 
-        err.what()
-    ));
-  } catch (std::exception const& err) {
-    undo_status_ = command_status::failure;
-
-    logger.get(logger_id::sync)->error(
-      utility::formatter<errorcode::system>::format(
-        errorcode::system::unhandled_std_exception,
-        err.what()
-    ));
-  }
+  );
 }
 
 auto remove_command::execute() -> void {
-  try {
-    log_enter_command("remove_command", "execute");
-
-    if (execute_status_ == command_status::failure ||
-        undo_status_ == command_status::failure) {
-      logger.get(logger_id::sync)->warn(
+  command_base::execute("remove_command", errorcode::command::remove_command_failed, 
+    [&] {
+      if (!fs::exists(snapshot_.root())) { 
+        logger.get(logger_id::sync)->debug(
+          utility::formatter<messagecode::command>::format(
+            messagecode::command::leave_command, 
+            "remove_command", "execute"
+        ));
+  
+        return; 
+      }
+    
+      auto const& source_root = snapshot_.root();
+      auto const trash_path = source_root / fs::path{".trash"};
+  
+      dc::create_directory(trash_path);
+      create_directories(snapshot_.directories(), trash_path);
+      copy_files(snapshot_.files(), source_root, trash_path, 
+                false, fs::copy_options::overwrite_existing);
+      remove_files(snapshot_.files(), snapshot_.root());
+      remove_directories(snapshot_.directories(), snapshot_.root());
+  
+      execute_status_ = command_status::success; 
+  
+      logger.get(logger_id::sync)->info(
         utility::formatter<messagecode::command>::format(
-          messagecode::command::execute_skipped,
-          "remove_command"
+          messagecode::command::remove_directory,
+          snapshot_.root().string()
       ));
-      log_leave_command("remove_command", "execute");
-      return;
+  
+      fs::remove_all(snapshot_.root());
     }
-
-    if (!fs::exists(snapshot_.root())) { 
-      logger.get(logger_id::sync)->debug(
-        utility::formatter<messagecode::command>::format(
-          messagecode::command::leave_command, 
-          "remove_command", "execute"
-      ));
-
-      return; 
-    }
-   
-    auto const& source_root = snapshot_.root();
-    auto const trash_path = source_root / fs::path{".trash"};
-
-    dc::create_directory(trash_path);
-    create_directories(snapshot_.directories(), trash_path);
-    copy_files(snapshot_.files(), source_root, trash_path, 
-               false, fs::copy_options::overwrite_existing);
-    remove_files(snapshot_.files(), snapshot_.root());
-    remove_directories(snapshot_.directories(), snapshot_.root());
-
-    execute_status_ = command_status::success; 
-
-    logger.get(logger_id::sync)->info(
-      utility::formatter<messagecode::command>::format(
-        messagecode::command::remove_directory,
-        snapshot_.root().string()
-    ));
-
-    fs::remove_all(snapshot_.root());
-
-    log_leave_command("remove_command", "execute");
-  } catch (fs::filesystem_error const& err) {
-    execute_status_ = command_status::failure; 
-
-    logger.get(logger_id::sync)->error(
-      utility::formatter<errorcode::command>::format(
-        errorcode::command::remove_command_failed,
-        "execute", err.path1().string(),
-        err.what()
-    ));
-
-    throw_exception<errorcode::command>(
-      errorcode::command::remove_command_failed,
-      "execute", err.path1().string(),
-      err.what()
-    );
-  } catch (std::exception const& err) {
-    execute_status_ = command_status::failure; 
-
-    logger.get(logger_id::sync)->error(
-      utility::formatter<errorcode::system>::format(
-        errorcode::system::unhandled_std_exception,
-        err.what()
-    ));
-
-    throw_exception<errorcode::system>(
-      errorcode::system::unhandled_std_exception,
-      err.what()
-    );
-  }
+  );
 }
 
 auto remove_command::undo() -> void {
-  try {
-    log_enter_command("remove_command", "undo");
+  command_base::undo("remove_command", errorcode::command::remove_command_failed,
+    [&] {
+      auto const& trash_path = snapshot_.root() / fs::path{".trash"};
 
-    if (execute_status_ == command_status::uninitialized ||
-        undo_status_ == command_status::success) {
-      logger.get(logger_id::sync)->warn(
+      if (!fs::exists(trash_path)) {
+        logger.get(logger_id::sync)->debug(
+          utility::formatter<messagecode::command>::format(
+            messagecode::command::leave_command, 
+            "remove_command", "undo"
+        ));
+  
+        return;
+      }
+  
+      create_directories(snapshot_.directories(), snapshot_.root(), true);
+      copy_files(snapshot_.files(), trash_path, snapshot_.root(), true);
+  
+      logger.get(logger_id::sync)->info(
         utility::formatter<messagecode::command>::format(
-          messagecode::command::undo_skipped,
-          "remove_command"
+          messagecode::command::remove_directory,
+          trash_path.string()
       ));
-      log_leave_command("remove_command", "undo");
-      return;
+  
+      fs::remove_all(trash_path);
     }
-
-    auto const& trash_path = snapshot_.root() / fs::path{".trash"};
-
-    if (!fs::exists(trash_path)) {
-      logger.get(logger_id::sync)->debug(
-        utility::formatter<messagecode::command>::format(
-          messagecode::command::leave_command, 
-          "remove_command", "undo"
-      ));
-
-      return;
-    }
-
-    create_directories(snapshot_.directories(), snapshot_.root(), true);
-    copy_files(snapshot_.files(), trash_path, snapshot_.root(), true);
-
-    logger.get(logger_id::sync)->info(
-      utility::formatter<messagecode::command>::format(
-        messagecode::command::remove_directory,
-        trash_path.string()
-    ));
-
-    fs::remove_all(trash_path);
-
-    undo_status_ = command_status::success;
-
-    log_leave_command("remove_command", "undo");
-  } catch (fs::filesystem_error const& err) {
-    undo_status_ = command_status::failure;
-
-    logger.get(logger_id::sync)->error(
-      utility::formatter<errorcode::command>::format(
-        errorcode::command::remove_command_failed,
-        "undo", err.path1().string(), 
-        err.what()
-    ));
-  } catch (std::exception const& err) {
-    undo_status_ = command_status::failure;
-
-    logger.get(logger_id::sync)->error(
-      utility::formatter<errorcode::system>::format(
-        errorcode::system::unhandled_std_exception,
-        err.what()
-    ));
-  }
+  );
 }
 
 auto clone_transaction::try_undo(clone_command command, 

@@ -8,6 +8,7 @@
 #include <utility>
 #include <string_view>
 #include <cstdint>
+#include <functional>
 
 namespace dropclone {
 
@@ -23,10 +24,27 @@ enum class command_status {uninitialized, success, failure};
 
 class clone_transaction;
 
-class copy_command {
+class command_base {
+ protected:
+  command_base(path_snapshot snapshot) : snapshot_{std::move(snapshot)} {}
+
+  auto execute(std::string_view command_name, std::string_view errorcode,
+               std::function<void(void)> execute) -> void;
+  auto undo(std::string_view command_name, std::string_view errorcode,
+               std::function<void(void)> undo) -> void;
+
+  path_snapshot snapshot_;
+  command_status execute_status_{command_status::uninitialized};
+  command_status undo_status_{command_status::uninitialized};
+
+  friend class clone_transaction;
+};
+
+
+class copy_command : public command_base {
  public:
   copy_command(path_snapshot snapshot, fs::path destination_root) 
-    : snapshot_{std::move(snapshot)}, 
+    : command_base{std::move(snapshot)}, 
       destination_root_{std::move(destination_root)} 
   {}
 
@@ -34,18 +52,13 @@ class copy_command {
   auto undo() -> void;
 
  private:
-  path_snapshot snapshot_;
   fs::path destination_root_;
-  command_status execute_status_{command_status::uninitialized};
-  command_status undo_status_{command_status::uninitialized};
-
-  friend class clone_transaction;
 };
 
-class rename_command {
+class rename_command : public command_base {
  public:
   rename_command(path_snapshot snapshot, fs::path destination_root) 
-    : snapshot_{std::move(snapshot)}, 
+    : command_base{std::move(snapshot)}, 
       destination_root_{std::move(destination_root)} 
   {}
 
@@ -53,29 +66,17 @@ class rename_command {
   auto undo() -> void;
 
  private:
-  path_snapshot snapshot_;
   fs::path destination_root_;
-  command_status execute_status_{command_status::uninitialized};
-  command_status undo_status_{command_status::uninitialized};
-
-  friend class clone_transaction;
 };
 
-class remove_command {
+class remove_command : public command_base {
  public:
   remove_command(path_snapshot snapshot)
-    : snapshot_{std::move(snapshot)} 
+    : command_base{std::move(snapshot)} 
   {}
 
   auto execute() -> void;
   auto undo() -> void;
-
- private:
-  path_snapshot snapshot_;
-  command_status execute_status_{command_status::uninitialized};
-  command_status undo_status_{command_status::uninitialized};
-
-  friend class clone_transaction;
 };
 
 static_assert(is_clone_command<copy_command>);
