@@ -232,7 +232,7 @@ auto copy_command::undo() -> void {
   try {
     log_enter_command("copy_command", "undo");
 
-    if (execute_status_ != command_status::failure ||
+    if (execute_status_ == command_status::uninitialized ||
         undo_status_ == command_status::success) {
       logger.get(logger_id::sync)->warn(
         utility::formatter<messagecode::command>::format(
@@ -342,7 +342,7 @@ auto rename_command::undo() -> void {
   try {
     log_enter_command("rename_command", "undo");
 
-    if (execute_status_ != command_status::failure ||
+    if (execute_status_ == command_status::uninitialized ||
         undo_status_ == command_status::success) {
       logger.get(logger_id::sync)->warn(
         utility::formatter<messagecode::command>::format(
@@ -461,7 +461,7 @@ auto remove_command::undo() -> void {
   try {
     log_enter_command("remove_command", "undo");
 
-    if (execute_status_ != command_status::failure ||
+    if (execute_status_ == command_status::uninitialized ||
         undo_status_ == command_status::success) {
       logger.get(logger_id::sync)->warn(
         utility::formatter<messagecode::command>::format(
