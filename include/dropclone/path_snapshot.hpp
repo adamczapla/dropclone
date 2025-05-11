@@ -7,10 +7,12 @@
 #include <functional>
 #include <unordered_set> 
 #include <set>
+#include <chrono>
 
 namespace dropclone {
 
   namespace fs = std::filesystem;
+  namespace chr = std::chrono;
   
   class path_snapshot {
    public:
@@ -27,6 +29,8 @@ namespace dropclone {
 
     inline auto root() const noexcept -> fs::path;
     inline auto hash() const noexcept -> size_t;
+    inline auto has_data() const noexcept -> bool;
+
     inline auto entries() const noexcept -> snapshot_entries const&;
     inline auto files() const noexcept -> snapshot_entries const&;
     inline auto directories() const noexcept -> snapshot_directories const&;
@@ -46,6 +50,7 @@ namespace dropclone {
     snapshot_entries files_{};
     snapshot_directories directories_{};
     uncertain_processing_paths uncertain_processing_paths_{};
+    chr::time_point<chr::steady_clock> creation_time{};
     size_t hash_{};
   
     auto compute_hash() const -> size_t;
@@ -53,6 +58,8 @@ namespace dropclone {
 
   auto path_snapshot::root() const noexcept -> fs::path { return root_; }
   auto path_snapshot::hash() const noexcept -> size_t { return hash_; }
+  auto path_snapshot::has_data() const noexcept -> bool { return files_.empty() && directories_.empty(); }
+
   auto path_snapshot::entries() const noexcept -> snapshot_entries const& { return entries_; }
 
   auto path_snapshot::files() const noexcept -> snapshot_entries const& { return files_; }
