@@ -45,11 +45,12 @@ inline auto to_string(path_conflict_t conflict) -> std::string {
   
   
 struct path_info {
-  enum class status {unchanged, added, updated};
+  enum class status {unchanged, added, updated, deleted};
 
   fs::file_time_type last_write_time{};
   uintmax_t file_size{};
   fs::perms file_perms{};
+  bool is_directory{false};
   status path_status{status::unchanged};
   path_conflict_t conflict{path_conflict_t::none};
   
