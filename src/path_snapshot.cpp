@@ -9,22 +9,24 @@
 #include <utility>
 #include <functional>
 #include <system_error>
-
-#include <iostream> // remove it
+#include <chrono> 
 
 namespace dropclone {
 
   namespace rng = std::ranges;
   namespace vws = std::views;
   namespace fs = std::filesystem;
+  namespace chr = std::chrono;
 
-  path_snapshot::path_snapshot(fs::path root) : root_{std::move(root)} {}
+  path_snapshot::path_snapshot(fs::path root) 
+    : root_{std::move(root)}, creation_time{chr::steady_clock::now()} 
+  {}
 
   auto path_snapshot::operator-(path_snapshot const& other) -> path_snapshot { 
     path_snapshot result{root_};
 
     auto const emplace = [&](fs::path const& path, path_info const& info) {
-      if (fs::is_directory(root_ / path)) {
+      if (info.is_directory) {
         result.directories_.emplace(path, info);
       } else {
         result.files_.emplace(path, info);
@@ -37,7 +39,9 @@ namespace dropclone {
             found_uncertain_paths != rng::end(other.uncertain_processing_paths_)) {
           result.uncertain_processing_paths_.insert(entry.first);
         } else {
-          entry.second.path_status = path_info::status::added;
+          entry.second.path_status = creation_time < other.creation_time 
+                                     ? path_info::status::deleted 
+                                     : path_info::status::added; 
           emplace(entry.first, entry.second);
         }
       } else {
@@ -56,6 +60,27 @@ namespace dropclone {
         }
       } 
     });
+
+    // Correct directories falsely marked as 'updated':
+    // If a directory is flagged due to structural changes (e.g. deletion of 
+    // child files/directories), but no new or modified entries remain inside,
+    // reset its status to 'unchanged' to avoid unnecessary copy operations.
+    rng::for_each(result.directories(), [&](auto& directory) {
+      auto const is_relevant_change = [&](auto const& entry) {
+        return entry.first != directory.first &&
+               entry.first.string().starts_with(directory.first.string()) &&
+               entry.second.path_status != path_info::status::deleted;
+      };
+
+      if (bool relevant_change = 
+                directory.second.path_status == path_info::status::deleted || 
+                rng::any_of(result.files(), is_relevant_change) ||
+                rng::any_of(result.directories(), is_relevant_change); 
+          !relevant_change) {
+        directory.second.path_status = path_info::status::unchanged;
+      }
+    });
+
     return result; 
   }
 
@@ -75,7 +100,8 @@ namespace dropclone {
           entries_.try_emplace(relative_entry_path,
             dir_entry.last_write_time(), 
             dir_entry.is_directory() ? 0 : dir_entry.file_size(), 
-            dir_entry.status().permissions()
+            dir_entry.status().permissions(),
+            dir_entry.is_directory()
           ); 
         }
       }
