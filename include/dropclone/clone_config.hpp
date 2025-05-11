@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <regex>
 
 namespace dropclone {
 
@@ -24,6 +25,7 @@ struct config_entry {
   fs::path destination_directory{};
   clone_mode mode{};
   bool recursive{true};
+  std::regex exclude_pattern{".DS_Store"};
   // + exclude_patterns as regular expression
   // bidirectional_sync {true, false}
   auto sanitize() -> void;

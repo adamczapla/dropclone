@@ -7,6 +7,7 @@
 #include <string_view>
 #include <filesystem>
 #include <unordered_map>
+#include <regex>
 
 namespace dropclone {
 
@@ -36,7 +37,12 @@ auto config_entry::sanitize() -> void {
   destination_directory = destination_directory.lexically_normal();
 }
 
-auto config_entry::filter(fs::path const& path) -> bool { return true; } // only for now
+auto config_entry::filter(fs::path const& path) -> bool { // it is not final 
+  if (path.has_filename()) {
+    return !std::regex_match(path.filename().string(), exclude_pattern);
+  }
+  return true; 
+} 
 
 auto clone_config::has_conflict(path_node& root_node, fs::path const& path) const -> bool {
   path_node* current_node = &root_node;
