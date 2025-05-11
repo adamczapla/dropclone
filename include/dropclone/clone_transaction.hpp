@@ -37,9 +37,12 @@ class command_base {
   command_status execute_status_{command_status::uninitialized};
   command_status undo_status_{command_status::uninitialized};
 
+  inline auto has_data() const noexcept -> bool;
+
   friend class clone_transaction;
 };
 
+auto command_base::has_data() const noexcept -> bool { return snapshot_.has_data(); }
 
 class copy_command : public command_base {
  public:
