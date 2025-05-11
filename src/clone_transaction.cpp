@@ -354,10 +354,20 @@ auto remove_command::execute() -> void {
       logger.get(logger_id::sync)->info(
         utility::formatter<messagecode::command>::format(
           messagecode::command::remove_directory,
-          snapshot_.root().string()
+          trash_path.string()
       ));
-  
-      fs::remove_all(snapshot_.root());
+
+      fs::remove_all(trash_path);
+
+      if (fs::is_empty(source_root)) {
+        logger.get(logger_id::sync)->info(
+          utility::formatter<messagecode::command>::format(
+            messagecode::command::remove_directory,
+            source_root.string()
+        ));
+
+        fs::remove(source_root);
+      }
     }
   );
 }
@@ -453,7 +463,9 @@ auto clone_transaction::start() -> void {
   try {
     rng::for_each(commands_, [&](auto& command) {
       try {
-        std::visit([](auto& cmd) { cmd.execute(); }, command);
+        std::visit([](auto& cmd) { 
+          if ( !cmd.has_data()) { cmd.execute(); } 
+        }, command);
         processed_commands_.push(command);
       } catch (dc::exception const& err) {
         try_undo(command, 3);
