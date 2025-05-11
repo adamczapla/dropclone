@@ -18,6 +18,8 @@ clone_manager::clone_manager(config_entry entry)
 {}
 
 auto clone_manager::copy(path_snapshot const& source_snapshot, fs::path const& destination_root) -> void {
+  if (source_snapshot.has_data()) { return; }
+
   auto const filter_added_path = [](auto const& entry) -> bool { 
       return entry.second.path_status == path_info::status::added; 
   };
@@ -32,7 +34,9 @@ auto clone_manager::copy(path_snapshot const& source_snapshot, fs::path const& d
   path_snapshot updated_paths{source_snapshot.root()};
   updated_paths.add_files(source_snapshot.files(), filter_updated_path);
   updated_paths.add_directories(source_snapshot.directories(), filter_updated_path);
-  
+
+  if (added_paths.has_data() && updated_paths.has_data()) { return; }
+
   path_snapshot renamed_paths = updated_paths;
   renamed_paths.rebase(destination_root);
   auto const backup_path = destination_root / fs::path{".backup"};
@@ -56,7 +60,27 @@ auto clone_manager::copy(path_snapshot const& source_snapshot, fs::path const& d
 
   logger.get(logger_id::sync)->flush();
 }
-auto clone_manager::remove(path_snapshot const& snapshot) -> void {}
+auto clone_manager::remove(path_snapshot const& source_snapshot, fs::path const& destination_root) -> void {
+  auto const filter_deleted_path = [](auto const& entry) -> bool { 
+      return entry.second.path_status == path_info::status::deleted; 
+  };
+
+  path_snapshot deleted_paths{source_snapshot.root()};
+  deleted_paths.add_files(source_snapshot.files(), filter_deleted_path);
+  deleted_paths.add_directories(source_snapshot.directories(), filter_deleted_path);
+  deleted_paths.rebase(destination_root);
+
+  if (deleted_paths.has_data()) { return; }
+
+  remove_command remove_deleted_paths{deleted_paths};
+  clone_transaction remove_transaction{};
+  remove_transaction.add(remove_deleted_paths);
+  try {
+    remove_transaction.start();
+  } catch (dropclone::exception const& err) {
+    //
+  }
+}
 
 auto clone_manager::sync() -> void {
   try {
@@ -66,15 +90,14 @@ auto clone_manager::sync() -> void {
     if(source_snapshot_.hash() == current_source_snapshot.hash()) { return; }
 
     auto diff_snapshot_update = current_source_snapshot - source_snapshot_;
-    copy(diff_snapshot_update, entry_.destination_directory);
-  
-    // if (entry_.mode == clone_mode::move) { remove(diff_snapshot_update); } 
-  
-    // auto diff_snapshot_remove = source_snapshot_ - current_source_snapshot; 
-    // remove(diff_snapshot_remove, entry_.destination_directory);
+
+    if (entry_.mode == clone_mode::copy) { 
+      copy(diff_snapshot_update, entry_.destination_directory);
+      auto diff_snapshot_remove = source_snapshot_ - current_source_snapshot; 
+      remove(diff_snapshot_remove, entry_.destination_directory); 
+    }
   
     source_snapshot_ = std::move(current_source_snapshot);
-
   } catch (dc::exception const& e) {
     logger.get(logger_id::sync)->error(
       e.what()
