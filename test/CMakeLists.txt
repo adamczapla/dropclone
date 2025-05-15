@@ -22,7 +22,7 @@ list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(Catch)
 catch_discover_tests(dropclone_tests)
 
-option(RUN_TESTS "Run tests automatically after build" OFF)
+option(RUN_TESTS "Run tests automatically after build" ON)
 
 if(RUN_TESTS)
   add_custom_target(run_tests ALL
