@@ -7,12 +7,49 @@
 #include <string_view>
 #include <filesystem>
 #include <unordered_map>
+#include <algorithm>
+#include <utility>
 #include <regex>
+#include <ranges>
 
 namespace dropclone {
 
 namespace fs = std::filesystem;
 namespace rng = std::ranges;
+
+auto config_entry::compile_patterns(raw_patterns_type& raw_patterns) -> patterns_type {
+  patterns_type result{};
+  result.reserve(raw_patterns.size());
+
+  rng::for_each(raw_patterns, [&](auto& pattern) {
+    result.emplace_back(std::move(pattern), 
+      std::regex::ECMAScript 
+      | std::regex_constants::icase 
+      | std::regex::optimize);
+  });
+
+  return result;
+}
+
+config_entry::config_entry(fs::path source_directory, fs::path destination_directory)
+  : source_directory{std::move(source_directory)}, 
+    destination_directory{std::move(destination_directory)}
+{}
+
+config_entry::config_entry(fs::path source_directory, fs::path destination_directory, clone_mode mode)
+  : source_directory{std::move(source_directory)}, 
+    destination_directory{std::move(destination_directory)}, 
+    mode{mode}
+{}
+
+config_entry::config_entry(fs::path source_directory, fs::path destination_directory, 
+                           clone_mode mode, raw_patterns_type& exclude_patterns, 
+                           raw_patterns_type& include_patterns)
+  : source_directory{std::move(source_directory)}, 
+    destination_directory{std::move(destination_directory)},
+    mode{mode}, exclude_patterns{std::move(compile_patterns(exclude_patterns))}, 
+    include_patterns{std::move(compile_patterns(include_patterns))}
+{}
 
 auto config_entry::sanitize() -> void { 
   if (!source_directory.is_absolute()) {
@@ -33,15 +70,44 @@ auto config_entry::sanitize() -> void {
     );
   }
 
+  if (!exclude_patterns.empty() && !include_patterns.empty()) {
+    throw_exception<errorcode::config>(
+      errorcode::config::conflicting_fields, 
+      "exclude", "include"
+    );
+  }
+
   source_directory = source_directory.lexically_normal();
   destination_directory = destination_directory.lexically_normal();
 }
 
-auto config_entry::filter(fs::path const& path) -> bool { // it is not final 
-  if (path.has_filename()) {
-    return !std::regex_match(path.filename().string(), exclude_pattern);
+auto config_entry::filter(fs::path const& path) -> bool {
+  auto absolute_path{path.string()};
+  auto root_path{source_directory.string()};
+
+  if (!absolute_path.starts_with(root_path)) { return false; }
+  if (exclude_patterns.empty() && include_patterns.empty()) { 
+    return true; 
   }
-  return true; 
+
+  auto const root_size{root_path.size()};
+  auto relative_path = absolute_path.substr(
+    root_size + 1, absolute_path.size() - root_size 
+  );
+
+  if (!exclude_patterns.empty()) {
+    return !rng::any_of(exclude_patterns, [&](auto const& regex) {
+      return std::regex_search(relative_path, regex);
+    });
+  }
+
+  if (!include_patterns.empty()) {
+    return rng::any_of(include_patterns, [&](auto const& regex) {
+      return std::regex_search(relative_path, regex);
+    });
+  }
+
+  return false; 
 } 
 
 auto clone_config::has_conflict(path_node& root_node, fs::path const& path) const -> bool {
