@@ -16,6 +16,7 @@ struct config {
   static constexpr auto missing_required_field    = "config_error.008";
   static constexpr auto no_entries_defined        = "config_error.009";
   static constexpr auto invalid_field_type        = "config_error.010";
+  static constexpr auto conflicting_fields        = "config_error.011";
   
   static inline std::unordered_map<std::string_view, std::string_view> const messages{
     {file_not_found, "cannot open config file: {}"},
@@ -27,7 +28,8 @@ struct config {
     {path_not_configured, "{} path is not configured or not absolute – using fallback: '{}'"},
     {missing_required_field, "missing required field: '{}' in config file '{}'"},
     {no_entries_defined, "no entries defined in config file '{}'"},
-    {invalid_field_type, "field '{}' has invalid type"}
+    {invalid_field_type, "field '{}' has invalid type"},
+    {conflicting_fields, "configuration contains mutually exclusive fields: '{}' and '{}'"}
   };
 };
 
