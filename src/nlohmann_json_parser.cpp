@@ -8,6 +8,9 @@
 #include <filesystem>
 #include <fstream>
 #include <cstdlib>
+#include <vector>
+#include <string_view>
+#include <string>
 
 namespace dropclone {
 
@@ -68,14 +71,34 @@ auto nlohmann_json_parser::operator()(fs::path config_path) -> clone_config {
       throw_if_missing_required_field(elem, "destination_directory");
       throw_if_missing_required_field(elem, "mode");
 
-      bool recursive = true;
-      if (elem.contains("recursive")) { recursive = elem["recursive"]; }
+      if (elem.contains("exclude") && elem.contains("include")) {
+        throw_exception<errorcode::config>(
+          errorcode::config::conflicting_fields, 
+          "exclude", "include"
+        );
+      }
+
+      using patterns_t = std::vector<std::string>;
+
+      auto const get_patterns = [&](std::string_view name) {
+        if (!elem.contains(name)) { return patterns_t{}; }
+        if (!elem[name].is_array()) {
+          throw_exception<errorcode::config>(
+            errorcode::config::invalid_field_type, name
+          );
+        }
+        return elem[name].get<patterns_t>();
+      };
+
+      auto exclude_patterns = get_patterns("exclude");
+      auto include_patterns = get_patterns("include");
 
       config.entries.emplace_back(
         elem["source_directory"],
         elem["destination_directory"],
         elem["mode"],
-        recursive
+        exclude_patterns,
+        include_patterns
       );
     }
   } catch (json::exception const& e) {
