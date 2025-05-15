@@ -39,8 +39,7 @@ TEST_CASE("parser throws if json file contains syntax error", "[nlohmann_json_pa
       {
         "source_directory" : "/home/source",
         "destination_directory" : "/home/destination/",
-        "mode" : "copy", 
-        "recursive" : true
+        "mode" : "copy"
       }
     ],
     "log_directory" : "/github/dropclone/log/"
@@ -60,8 +59,7 @@ TEST_CASE("parser throws if required field 'log_directory' is missing", "[nlohma
       {
         "source_directory" : "/home/adamc/",
         "destination_directory" : "/home/adamc/copy/",
-        "mode" : "copy", 
-        "recursive" : true
+        "mode" : "copy"
       }
     ] 
   })";
@@ -92,8 +90,7 @@ TEST_CASE("parser throws if required field 'source_directory' is missing", "[nlo
     "clone_config" : [
       {
         "destination_directory" : "/home/destination/",
-        "mode" : "copy", 
-        "recursive" : true
+        "mode" : "copy"
       }
     ],
     "log_directory" : "/github/dropclone/log/"
@@ -112,8 +109,7 @@ TEST_CASE("parser throws if required field 'destination_directory' is missing", 
     "clone_config" : [ 
       {
         "source_directory" : "/home/source",
-        "mode" : "copy", 
-        "recursive" : true
+        "mode" : "copy"
       }
     ],
     "log_directory" : "/github/dropclone/log/"
@@ -132,8 +128,7 @@ TEST_CASE("parser throws if required field 'mode' is missing", "[nlohmann_json_p
     "clone_config" : [ 
       {
         "source_directory" : "/home/source",
-        "destination_directory" : "/home/destination/",
-        "recursive" : true
+        "destination_directory" : "/home/destination/"
       }
     ],
     "log_directory" : "/github/dropclone/log/"
@@ -145,25 +140,6 @@ TEST_CASE("parser throws if required field 'mode' is missing", "[nlohmann_json_p
     Catch::Matchers::MessageMatches(Catch::Matchers::ContainsSubstring("config_error.008")));
 }
 
-TEST_CASE("parser passes if optional field 'recursive' is missing", "[nlohmann_json_parser]") {
-  constexpr auto json_config = 
-  R"(
-  {
-    "clone_config" : [ 
-      {
-        "source_directory" : "/home/source",
-        "destination_directory" : "/home/destination/",
-        "mode" : "copy"
-      }
-    ],
-    "log_directory" : "/github/dropclone/log/"
-  })";
-
-  create_temporary_json_file(json_config);
-
-  REQUIRE_NOTHROW(dc::nlohmann_json_parser{}(temp_config_path));
-}
-
 TEST_CASE("parser throws if field 'log_directory' has invalid type", "[nlohmann_json_parser]") {
   constexpr auto json_config = 
   R"(
@@ -172,8 +148,7 @@ TEST_CASE("parser throws if field 'log_directory' has invalid type", "[nlohmann_
       {
         "source_directory" : "/home/source",
         "destination_directory" : "/home/destination/",
-        "mode" : "copy", 
-        "recursive" : true
+        "mode" : "copy"
       }
     ],
     "log_directory" : 0
@@ -221,8 +196,7 @@ TEST_CASE("parser throws if field 'source_directory' has invalid type", "[nlohma
       {
         "source_directory" : [],
         "destination_directory" : "/home/destination/",
-        "mode" : "copy", 
-        "recursive" : true
+        "mode" : "copy"
       }
     ],
     "log_directory" : "/github/dropclone/log/"
@@ -242,29 +216,7 @@ TEST_CASE("parser throws if field 'destination_directory' has invalid type", "[n
       {
         "source_directory" : "/home/source",
         "destination_directory" : 0,
-        "mode" : "copy",
-        "recursive" : true
-      }
-    ],
-    "log_directory" : "/github/dropclone/log/"
-  })";
-
-  create_temporary_json_file(json_config);
-
-  REQUIRE_THROWS_MATCHES(dc::nlohmann_json_parser{}(temp_config_path), dc::exception, 
-    Catch::Matchers::MessageMatches(Catch::Matchers::ContainsSubstring("config_error.003")));
-}
-
-TEST_CASE("parser throws if field 'recursive' has invalid type", "[nlohmann_json_parser]") {
-  constexpr auto json_config = 
-  R"(
-  {
-    "clone_config" : [
-      {
-        "source_directory" : "/home/source",
-        "destination_directory" : "/home/destination/",
-        "mode" : "copy",
-        "recursive" : "true"
+        "mode" : "copy"
       }
     ],
     "log_directory" : "/github/dropclone/log/"
@@ -284,14 +236,12 @@ TEST_CASE("parser passes if multiple entries are configured correctly", "[nlohma
       {
         "source_directory" : "/home/source",
         "destination_directory" : "/home/destination/",
-        "mode" : "copy", 
-        "recursive" : true
+        "mode" : "copy"
       },
       {
         "source_directory" : "/home/source2",
         "destination_directory" : "/home/destination2/",
-        "mode" : "move", 
-        "recursive" : false
+        "mode" : "move"
       }
     ],
     "log_directory" : "/github/dropclone/log/"
