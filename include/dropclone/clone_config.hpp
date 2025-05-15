@@ -21,15 +21,25 @@ NLOHMANN_JSON_SERIALIZE_ENUM(clone_mode, {
 })
 
 struct config_entry {
+  using patterns_type = std::vector<std::regex>;
+  using raw_patterns_type = std::vector<std::string>;
+
+  config_entry(fs::path source_directory, fs::path destination_directory);
+  config_entry(fs::path source_directory, fs::path destination_directory, clone_mode mode);
+  config_entry(fs::path source_directory, fs::path destination_directory, clone_mode mode, 
+               raw_patterns_type& exclude_patterns, raw_patterns_type& include_patterns);
+
   fs::path source_directory{};
   fs::path destination_directory{};
   clone_mode mode{};
-  bool recursive{true};
-  std::regex exclude_pattern{".DS_Store"};
-  // + exclude_patterns as regular expression
-  // bidirectional_sync {true, false}
+  patterns_type exclude_patterns{};
+  patterns_type include_patterns{};
+
+  // bidirectional_sync {true, false} // comming soon
   auto sanitize() -> void;
   auto filter(fs::path const&) -> bool;
+
+  static auto compile_patterns(raw_patterns_type& raw_patterns) -> patterns_type;
 };
 
 class clone_config {
