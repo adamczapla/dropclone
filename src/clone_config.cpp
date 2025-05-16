@@ -155,6 +155,13 @@ auto clone_config::validate() -> void {
         "destination_directory", entry.destination_directory.string()
       );
     }
+
+    if (has_conflict(root_destination, entry.source_directory)) {
+      throw_exception<errorcode::config>(
+        errorcode::config::overlapping_path_conflict, 
+        "destination_directory", entry.source_directory.string()
+      );
+    }
   }
 }
 
