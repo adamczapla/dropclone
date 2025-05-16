@@ -25,7 +25,8 @@ auto config_entry::compile_patterns(raw_patterns_type& raw_patterns) -> patterns
     result.emplace_back(std::move(pattern), 
       std::regex::ECMAScript 
       | std::regex_constants::icase 
-      | std::regex::optimize);
+      | std::regex::optimize
+    );
   });
 
   return result;
@@ -90,10 +91,8 @@ auto config_entry::filter(fs::path const& path) -> bool {
     return true; 
   }
 
-  auto const root_size{root_path.size()};
-  auto relative_path = absolute_path.substr(
-    root_size + 1, absolute_path.size() - root_size 
-  );
+  if (!root_path.ends_with("/")) { root_path.append("/"); }
+  auto relative_path = absolute_path.substr(root_path.size());
 
   if (!exclude_patterns.empty()) {
     return !rng::any_of(exclude_patterns, [&](auto const& regex) {
