@@ -60,6 +60,19 @@ TEST_CASE("sanitize throws if mode is undefined", "[clone_config][config_entry]"
   REQUIRE_THROWS_AS(entry.sanitize(), dc::exception);
 }
 
+TEST_CASE("sanitize throws if both exclude_patterns and include_patterns are non-empty", "[clone_config][config_entry]") { 
+  dc::config_entry::raw_patterns_type exclude_patterns{"pattern1", "pattern2"};
+  dc::config_entry::raw_patterns_type include_patterns{"pattern1"};
+  dc::config_entry entry{
+    fs::path{"/dropclone/test/"},
+    fs::path{"/dropclone/test/"},
+    dc::clone_mode::copy,
+    exclude_patterns,
+    include_patterns
+  };
+  REQUIRE_THROWS_AS(entry.sanitize(), dc::exception);
+}
+
 TEST_CASE("sanitize normalizes paths if input is valid", "[clone_config][config_entry]") {
   dc::config_entry entry{
     fs::path{"/dropclone/test/"},
@@ -82,6 +95,82 @@ TEST_CASE("sanitize normalizes source and destination paths", "[clone_config][co
   CHECK_THAT(entry.destination_directory.string(), Equals("/dropclone/test/"));
 }
 
+TEST_CASE("filter returns false for paths outside source_directory", "[clone_config][config_entry]") {
+  dc::config_entry entry{
+    fs::path{"/dropclone/origin/"},
+    fs::path{"/dropclone/copy/"},
+    dc::clone_mode::copy
+  };
+
+  REQUIRE(!entry.filter(fs::path{"/dropclone/books/cpp.pdf"}));
+}
+
+TEST_CASE("filter returns true if both exclude_patterns and include_patterns are empty", "[clone_config][config_entry]") {
+  dc::config_entry entry{
+    fs::path{"/dropclone/origin/"},
+    fs::path{"/dropclone/copy/"},
+    dc::clone_mode::copy
+  };
+
+  REQUIRE(entry.filter(fs::path{"/dropclone/origin/cpp.pdf"}));
+}
+
+TEST_CASE("filter rejects path matching an exclude pattern", "[clone_config][config_entry]") {
+  dc::config_entry::raw_patterns_type exclude_patterns{"cpp\\.txt$", "[-.\\w]+\\.pdf$"};
+  dc::config_entry::raw_patterns_type include_patterns{};
+  dc::config_entry entry{
+    fs::path{"/dropclone/origin/"},
+    fs::path{"/dropclone/copy/"},
+    dc::clone_mode::copy,
+    exclude_patterns,
+    include_patterns
+  };
+
+  REQUIRE(!entry.filter(fs::path{"/dropclone/origin/cpp.pdf"}));
+}
+
+TEST_CASE("filter accepts path not matching any exclude pattern", "[clone_config][config_entry]") {
+  dc::config_entry::raw_patterns_type exclude_patterns{"cpp\\.txt$", "[-.\\d]+\\.pdf$"};
+  dc::config_entry::raw_patterns_type include_patterns{};
+  dc::config_entry entry{
+    fs::path{"/dropclone/origin/"},
+    fs::path{"/dropclone/copy/"},
+    dc::clone_mode::copy,
+    exclude_patterns,
+    include_patterns
+  };
+
+  REQUIRE(entry.filter(fs::path{"/dropclone/origin/cpp.pdf"}));
+}
+
+TEST_CASE("filter accepts path matching an include pattern", "[clone_config][config_entry]") {
+  dc::config_entry::raw_patterns_type exclude_patterns{};
+  dc::config_entry::raw_patterns_type include_patterns{"cpp\\.txt$", "[-.\\w]+(\\/[-.\\w]+)*\\/?$"};
+  dc::config_entry entry{
+    fs::path{"/dropclone/"},
+    fs::path{"/dropclone/copy/"},
+    dc::clone_mode::copy,
+    exclude_patterns,
+    include_patterns
+  };
+
+  REQUIRE(entry.filter(fs::path{"/dropclone/origin/books/"}));
+}
+
+TEST_CASE("filter rejects path not matching any include pattern", "[clone_config][config_entry]") {
+  dc::config_entry::raw_patterns_type exclude_patterns{};
+  dc::config_entry::raw_patterns_type include_patterns{"cpp\\.txt$", "[-.\\d]+$"};
+  dc::config_entry entry{
+    fs::path{"/dropclone/"},
+    fs::path{"/dropclone/copy/"},
+    dc::clone_mode::copy,
+    exclude_patterns,
+    include_patterns
+  };
+
+  REQUIRE(!entry.filter(fs::path{"/dropclone/origin/books/"}));
+}
+
 static fs::path const path_root{"/"};
 static fs::path const path_a{"/a"};
 static fs::path const path_a_slash{"/a/"};
@@ -89,7 +178,6 @@ static fs::path const path_b{"/b"};
 static fs::path const path_b_slash{"/b/"};
 static fs::path const path_ab{"/a/b"};
 static fs::path const path_ab_slash{"/a/b/"};
-
 static fs::path const path_c{"/c"};
 static fs::path const path_d{"/d"};
 
