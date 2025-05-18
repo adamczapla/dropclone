@@ -10,17 +10,19 @@ namespace dropclone {
 
 namespace fs = std::filesystem;
 
-enum class path_conflict_t{none, size_mismatch, permission_mismatch, permission_denied};
+enum class path_conflict_t{none, size_mismatch, permission_mismatch, access_denied};
 
 namespace messagecode {
 
 struct path_conflict {
   static constexpr auto size_mismatch         = "path_conflict_message.001";
   static constexpr auto permission_mismatch   = "path_conflict_message.002";
+  static constexpr auto access_denied         = "path_conflict_message.003";
 
   static inline std::unordered_map<path_conflict_t, std::string_view> const messages{
     {path_conflict_t::size_mismatch, "file sizes differ for '{}' despite identical timestamps"},
-    {path_conflict_t::permission_mismatch, "file permissions differ for '{}'"}
+    {path_conflict_t::permission_mismatch, "permissions differ for '{}'"},
+    {path_conflict_t::access_denied, "access denied to '{}'"}
   };
 };
   
@@ -37,12 +39,13 @@ inline auto to_string(path_conflict_t conflict) -> std::string {
       return std::string{msc::path_conflict::size_mismatch};
     case path_conflict_t::permission_mismatch:
       return std::string{msc::path_conflict::permission_mismatch};
+    case path_conflict_t::access_denied:
+      return std::string{msc::path_conflict::access_denied};
   }
   return "unknown conflict";
 }
 
 } // namespace utility
-  
   
 struct path_info {
   enum class status {unchanged, added, updated, deleted};
