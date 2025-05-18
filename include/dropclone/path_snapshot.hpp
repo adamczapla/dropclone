@@ -18,14 +18,16 @@ namespace dropclone {
    public:
     using snapshot_entries = std::unordered_map<fs::path, path_info>; 
     using snapshot_directories = std::map<fs::path, path_info>;
-    using uncertain_processing_paths = std::unordered_set<fs::path>;
+    // using uncertain_processing_paths = std::unordered_set<fs::path>;
     using path_filter = std::function<bool(fs::path const&)>;
     using entry_filter = std::function<bool(snapshot_entries::value_type const&)>;
   
     explicit path_snapshot(fs::path root);
   
     auto make(path_filter filter = {}) -> void;
-    auto operator-(path_snapshot const& other) -> path_snapshot;
+    auto local_diff(path_snapshot const& other) -> path_snapshot;
+
+    // * auto cross_diff(path_snapshot const& other) -> path_snapshot; // for bidirectional sync
 
     inline auto root() const noexcept -> fs::path;
     inline auto hash() const noexcept -> size_t;
@@ -49,7 +51,6 @@ namespace dropclone {
     snapshot_entries conflicts_{};
     snapshot_entries files_{};
     snapshot_directories directories_{};
-    uncertain_processing_paths uncertain_processing_paths_{};
     chr::time_point<chr::steady_clock> creation_time{};
     size_t hash_{};
   

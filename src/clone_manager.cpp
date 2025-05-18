@@ -89,11 +89,11 @@ auto clone_manager::sync() -> void {
 
     if(source_snapshot_.hash() == current_source_snapshot.hash()) { return; }
 
-    auto diff_snapshot_update = current_source_snapshot - source_snapshot_;
+    auto diff_snapshot_update = current_source_snapshot.local_diff(source_snapshot_);
 
     if (entry_.mode == clone_mode::copy) { 
       copy(diff_snapshot_update, entry_.destination_directory);
-      auto diff_snapshot_remove = source_snapshot_ - current_source_snapshot; 
+      auto diff_snapshot_remove = source_snapshot_.local_diff(current_source_snapshot);
       remove(diff_snapshot_remove, entry_.destination_directory); 
     }
   

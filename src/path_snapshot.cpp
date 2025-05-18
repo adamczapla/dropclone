@@ -22,7 +22,7 @@ namespace dropclone {
     : root_{std::move(root)}, creation_time{chr::steady_clock::now()} 
   {}
 
-  auto path_snapshot::operator-(path_snapshot const& other) -> path_snapshot { 
+  auto path_snapshot::local_diff(path_snapshot const& other) -> path_snapshot {
     path_snapshot result{root_};
 
     auto const emplace = [&](fs::path const& path, path_info const& info) {
@@ -35,29 +35,17 @@ namespace dropclone {
 
     rng::for_each(entries_, [&](auto& entry) {
       if (auto found = other.entries_.find(entry.first); found == rng::end(other.entries_)) {
-        if (auto found_uncertain_paths = other.uncertain_processing_paths_.find(entry.first); 
-            found_uncertain_paths != rng::end(other.uncertain_processing_paths_)) {
-          result.uncertain_processing_paths_.insert(entry.first);
-        } else {
           entry.second.path_status = creation_time < other.creation_time 
                                      ? path_info::status::deleted 
                                      : path_info::status::added; 
           emplace(entry.first, entry.second);
-        }
       } else {
-        entry.second.path_status = path_info::status::updated;
-        if (entry.second.last_write_time != found->second.last_write_time) {
-          entry.second = found->second;
+        if (entry.second.last_write_time != found->second.last_write_time ||
+            entry.second.file_size != found->second.file_size ||
+            entry.second.file_perms != found->second.file_perms) {
           entry.second.path_status = path_info::status::updated;
           emplace(entry.first, entry.second);
-        } else if (entry.second.last_write_time == found->second.last_write_time && 
-                   entry.second.file_size != found->second.file_size) {
-          entry.second.conflict = path_conflict_t::size_mismatch;
-          result.conflicts_.emplace(entry.first, entry.second);
-        } else if (entry.second.file_perms != found->second.file_perms) {
-          entry.second.conflict = path_conflict_t::permission_mismatch;
-          result.conflicts_.emplace(entry.first, entry.second);
-        }
+        } 
       } 
     });
 
@@ -81,7 +69,7 @@ namespace dropclone {
       }
     });
 
-    return result; 
+    return result;
   }
 
   auto path_snapshot::make(path_filter filter) -> void { 
@@ -94,7 +82,9 @@ namespace dropclone {
       for (auto const& dir_entry : recursive_directory_view) {
         auto const relative_entry_path = fs::relative(dir_entry.path(), root_);
         if (error_code == std::errc::permission_denied) {
-          uncertain_processing_paths_.insert(relative_entry_path);
+          path_info info{};
+          info.conflict = path_conflict_t::access_denied;
+          conflicts_.emplace(relative_entry_path, info);
           error_code.clear();
         } else {
           entries_.try_emplace(relative_entry_path,
