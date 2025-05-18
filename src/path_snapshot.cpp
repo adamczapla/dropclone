@@ -65,7 +65,12 @@ namespace dropclone {
                 rng::any_of(result.files(), is_relevant_change) ||
                 rng::any_of(result.directories(), is_relevant_change); 
           !relevant_change) {
-        directory.second.path_status = path_info::status::unchanged;
+        // 1. Empty directories receive the status 'structurally_required' to ensure they are
+        //    created in the destination, even if they contain no added or updated entries.
+        // 2. When deleting files, they are first moved to a .trash directory for potential recovery.
+        //    To copy them there, the required directory structure (e.g. .trash/dir1/dir2/) must exist.
+        //    These intermediate directories are also marked as 'structurally_required'.
+        directory.second.path_status = path_info::status::structurally_required;
       }
     });
 

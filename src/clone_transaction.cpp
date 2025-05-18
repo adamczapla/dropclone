@@ -88,8 +88,8 @@ auto remove_directories(path_snapshot::snapshot_directories& directories,
                         bool extract_on_success) -> void {
   rng::for_each(rng::crbegin(directories), rng::crend(directories),
     [&] (auto const& entry) { 
-      if(auto const directory_path = source_root / entry.first; 
-         fs::exists(directory_path)) {
+      if(auto const directory_path = source_root / entry.first; fs::exists(directory_path) && 
+         entry.second.path_status != path_info::status::structurally_required) {
 
         logger.get(logger_id::sync)->info(
           utility::formatter<messagecode::command>::format(
@@ -229,7 +229,6 @@ auto command_base::execute(std::string_view command_name,
     );
   }
 }
-
 
 auto command_base::undo(std::string_view command_name, 
                         std::string_view errorcode,

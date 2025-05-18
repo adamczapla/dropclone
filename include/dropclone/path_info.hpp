@@ -48,7 +48,7 @@ inline auto to_string(path_conflict_t conflict) -> std::string {
 } // namespace utility
   
 struct path_info {
-  enum class status {unchanged, added, updated, deleted};
+  enum class status {unchanged, added, updated, deleted, structurally_required};
 
   fs::file_time_type last_write_time{};
   uintmax_t file_size{};

@@ -21,7 +21,8 @@ auto clone_manager::copy(path_snapshot const& source_snapshot, fs::path const& d
   if (source_snapshot.has_data()) { return; }
 
   auto const filter_added_path = [](auto const& entry) -> bool { 
-      return entry.second.path_status == path_info::status::added; 
+      return entry.second.path_status == path_info::status::added || 
+             entry.second.path_status == path_info::status::structurally_required;
   };
   path_snapshot added_paths{source_snapshot.root()};
   added_paths.add_files(source_snapshot.files(), filter_added_path);
@@ -62,13 +63,13 @@ auto clone_manager::copy(path_snapshot const& source_snapshot, fs::path const& d
 }
 auto clone_manager::remove(path_snapshot const& source_snapshot, fs::path const& destination_root) -> void {
   auto const filter_deleted_path = [](auto const& entry) -> bool { 
-      return entry.second.path_status == path_info::status::deleted; 
+      return entry.second.path_status == path_info::status::deleted ||
+      entry.second.path_status == path_info::status::structurally_required; 
   };
 
-  path_snapshot deleted_paths{source_snapshot.root()};
+  path_snapshot deleted_paths{destination_root}; 
   deleted_paths.add_files(source_snapshot.files(), filter_deleted_path);
   deleted_paths.add_directories(source_snapshot.directories(), filter_deleted_path);
-  deleted_paths.rebase(destination_root);
 
   if (deleted_paths.has_data()) { return; }
 
@@ -96,7 +97,7 @@ auto clone_manager::sync() -> void {
       auto diff_snapshot_remove = source_snapshot_.local_diff(current_source_snapshot);
       remove(diff_snapshot_remove, entry_.destination_directory); 
     }
-  
+
     source_snapshot_ = std::move(current_source_snapshot);
   } catch (dc::exception const& e) {
     logger.get(logger_id::sync)->error(
