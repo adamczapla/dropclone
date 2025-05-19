@@ -96,6 +96,8 @@ auto clone_manager::remove(path_snapshot const& source_snapshot, fs::path const&
       "clone_manager::remove", err.what()
     );
   }
+
+  logger.get(logger_id::sync)->flush();
 }
 
 auto clone_manager::move(path_snapshot const& source_snapshot, fs::path const& destination_root) -> void {
@@ -128,6 +130,8 @@ auto clone_manager::move(path_snapshot const& source_snapshot, fs::path const& d
       "clone_manager::move", err.what()
     );
   }
+
+  logger.get(logger_id::sync)->flush();
 }
 
 auto clone_manager::sync() -> void {
