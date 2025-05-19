@@ -18,7 +18,7 @@ clone_manager::clone_manager(config_entry entry)
 {}
 
 auto clone_manager::copy(path_snapshot const& source_snapshot, fs::path const& destination_root) -> void {
-  if (source_snapshot.has_data()) { return; }
+  if (!source_snapshot.has_data()) { return; }
 
   auto const filter_added_path = [](auto const& entry) -> bool { 
       return entry.second.path_status == path_info::status::added || 
@@ -36,7 +36,7 @@ auto clone_manager::copy(path_snapshot const& source_snapshot, fs::path const& d
   updated_paths.add_files(source_snapshot.files(), filter_updated_path);
   updated_paths.add_directories(source_snapshot.directories(), filter_updated_path);
 
-  if (added_paths.has_data() && updated_paths.has_data()) { return; }
+  if (!added_paths.has_data() && !updated_paths.has_data()) { return; }
 
   path_snapshot renamed_paths = updated_paths;
   renamed_paths.rebase(destination_root);
@@ -61,6 +61,7 @@ auto clone_manager::copy(path_snapshot const& source_snapshot, fs::path const& d
 
   logger.get(logger_id::sync)->flush();
 }
+
 auto clone_manager::remove(path_snapshot const& source_snapshot, fs::path const& destination_root) -> void {
   auto const filter_deleted_path = [](auto const& entry) -> bool { 
       return entry.second.path_status == path_info::status::deleted ||
@@ -71,7 +72,7 @@ auto clone_manager::remove(path_snapshot const& source_snapshot, fs::path const&
   deleted_paths.add_files(source_snapshot.files(), filter_deleted_path);
   deleted_paths.add_directories(source_snapshot.directories(), filter_deleted_path);
 
-  if (deleted_paths.has_data()) { return; }
+  if (!deleted_paths.has_data()) { return; }
 
   remove_command remove_deleted_paths{deleted_paths};
   clone_transaction remove_transaction{};
@@ -81,6 +82,10 @@ auto clone_manager::remove(path_snapshot const& source_snapshot, fs::path const&
   } catch (dropclone::exception const& err) {
     //
   }
+}
+
+auto clone_manager::move(path_snapshot const& source_snapshot, fs::path const& destination_root) -> void {
+
 }
 
 auto clone_manager::sync() -> void {

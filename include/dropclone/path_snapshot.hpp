@@ -59,7 +59,7 @@ namespace dropclone {
 
   auto path_snapshot::root() const noexcept -> fs::path { return root_; }
   auto path_snapshot::hash() const noexcept -> size_t { return hash_; }
-  auto path_snapshot::has_data() const noexcept -> bool { return files_.empty() && directories_.empty(); }
+  auto path_snapshot::has_data() const noexcept -> bool { return !files_.empty() || !directories_.empty(); }
 
   auto path_snapshot::entries() const noexcept -> snapshot_entries const& { return entries_; }
 
@@ -68,4 +68,5 @@ namespace dropclone {
 
   auto path_snapshot::directories() const noexcept -> snapshot_directories const& { return directories_; }
   auto path_snapshot::directories() noexcept -> snapshot_directories& { return directories_; }
+
 } // namespace dropclone

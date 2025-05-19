@@ -463,7 +463,7 @@ auto clone_transaction::start() -> void {
     rng::for_each(commands_, [&](auto& command) {
       try {
         std::visit([](auto& cmd) { 
-          if ( !cmd.has_data()) { cmd.execute(); } 
+          if (cmd.has_data()) { cmd.execute(); } 
         }, command);
         processed_commands_.push(command);
       } catch (dc::exception const& err) {
