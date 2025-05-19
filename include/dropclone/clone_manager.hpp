@@ -14,6 +14,7 @@ class clone_manager {
   auto sync() -> void;
   auto copy(path_snapshot const& source_snapshot, fs::path const& destination_root) -> void;
   auto remove(path_snapshot const& source_snapshot, fs::path const& destination_root) -> void;
+  auto move(path_snapshot const& source_snapshot, fs::path const& destination_root) -> void;
 
  private:
   path_snapshot source_snapshot_;
