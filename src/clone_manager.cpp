@@ -5,11 +5,14 @@
 #include <dropclone/clone_transaction.hpp>
 #include <dropclone/logger_manager.hpp>
 #include <filesystem>
+#include <ranges>
+#include <algorithm>
 
 namespace dropclone {
 
 namespace fs = std::filesystem;
 namespace dc = dropclone;
+namespace rng = std::ranges;
 
 clone_manager::clone_manager(config_entry entry) 
   : source_snapshot_{entry.source_directory}, 
@@ -24,6 +27,7 @@ auto clone_manager::copy(path_snapshot const& source_snapshot, fs::path const& d
       return entry.second.path_status == path_info::status::added || 
              entry.second.path_status == path_info::status::structurally_required;
   };
+
   path_snapshot added_paths{source_snapshot.root()};
   added_paths.add_files(source_snapshot.files(), filter_added_path);
   added_paths.add_directories(source_snapshot.directories(), filter_added_path);
@@ -32,6 +36,7 @@ auto clone_manager::copy(path_snapshot const& source_snapshot, fs::path const& d
   auto const filter_updated_path = [](auto const& entry) -> bool { 
       return entry.second.path_status == path_info::status::updated;
   };
+
   path_snapshot updated_paths{source_snapshot.root()};
   updated_paths.add_files(source_snapshot.files(), filter_updated_path);
   updated_paths.add_directories(source_snapshot.directories(), filter_updated_path);
@@ -75,16 +80,43 @@ auto clone_manager::remove(path_snapshot const& source_snapshot, fs::path const&
   if (!deleted_paths.has_data()) { return; }
 
   remove_command remove_deleted_paths{deleted_paths};
-  clone_transaction remove_transaction{};
-  remove_transaction.add(remove_deleted_paths);
+  clone_transaction move_transaction{};
+  move_transaction.add(remove_deleted_paths);
+
   try {
-    remove_transaction.start();
+    move_transaction.start();
   } catch (dropclone::exception const& err) {
     //
   }
 }
 
 auto clone_manager::move(path_snapshot const& source_snapshot, fs::path const& destination_root) -> void {
+  if (!source_snapshot.has_data()) { return; }
+
+  auto const filter_added_path = [](auto const& entry) -> bool { 
+      return entry.second.path_status == path_info::status::added ||
+      entry.second.path_status == path_info::status::updated; 
+  };
+
+  path_snapshot added_paths{source_snapshot.root()};
+  added_paths.add_files(source_snapshot.files(), filter_added_path);
+  added_paths.add_directories(source_snapshot.directories(), filter_added_path);
+  copy_command copy_added_paths{added_paths, destination_root};
+
+  rng::for_each(added_paths.directories(), [](auto& directory) {
+    directory.second.path_status = path_info::status::structurally_required;
+  });
+  remove_command remove_added_paths{added_paths};
+
+  clone_transaction remove_transaction{};
+  remove_transaction.add(copy_added_paths);
+  remove_transaction.add(remove_added_paths);
+
+  try {
+    remove_transaction.start();
+  } catch (dropclone::exception const& err) {
+    //
+  }
 
 }
 
@@ -101,6 +133,8 @@ auto clone_manager::sync() -> void {
       copy(diff_snapshot_update, entry_.destination_directory);
       auto diff_snapshot_remove = source_snapshot_.local_diff(current_source_snapshot);
       remove(diff_snapshot_remove, entry_.destination_directory); 
+    } else if (entry_.mode == clone_mode::move) {
+      move(diff_snapshot_update, entry_.destination_directory);
     }
 
     source_snapshot_ = std::move(current_source_snapshot);
