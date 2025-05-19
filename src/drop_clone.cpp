@@ -92,36 +92,6 @@ auto drop_clone::init_config_logger() -> void {
   }());
 }
 
-// auto drop_clone::init_startup_logger() -> void {
-//   auto const log_file = clone_config_.log_directory / "startup_log.txt";
-
-//   logger.add(logger_id::startup, [&] {
-//     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-//     console_sink->set_level(spdlog::level::info);
-//     console_sink->set_pattern(logger_manager::default_pattern);
-
-//     auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(log_file.string(), false);
-//     file_sink->set_level(spdlog::level::info);
-//     file_sink->set_pattern(logger_manager::default_pattern);
-
-//     auto logger = std::make_shared<spdlog::async_logger>(
-//       to_string(logger_id::startup), spdlog::sinks_init_list{console_sink, file_sink}, 
-//       spdlog::thread_pool(), spdlog::async_overflow_policy::block
-//     );
-
-//     logger->set_level(spdlog::level::trace);
-//     spdlog::register_logger(logger);
-
-//     return logger;
-//   }());
-
-//   logger.get(logger_id::config)->info(
-//     utility::formatter<messagecode::config>::format(
-//       messagecode::config::logging_ready,
-//       log_file.string()
-//   ));
-// }
-
 auto drop_clone::init_sync_logger() -> void {
   auto const log_file = clone_config_.log_directory / "sync_log.txt";
 
@@ -155,34 +125,6 @@ auto drop_clone::init_sync_logger() -> void {
       log_file.string()
   ));
 }
-
-// auto drop_clone::init_daemon_logger() -> void {
-//   auto const log_file = clone_config_.log_directory / "daemon_log.txt";
-
-//   logger.add(logger_id::daemon, [&] {
-//     constexpr auto max_file_size = 1024*1024*10;
-//     constexpr auto max_log_files = 3;
-
-//     auto rotating_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-//       log_file.string(), max_file_size, max_log_files);
-//     rotating_sink->set_level(spdlog::level::info);
-//     rotating_sink->set_pattern(logger_manager::default_pattern);
-
-//     auto logger = std::make_shared<spdlog::async_logger>(
-//       to_string(logger_id::daemon), spdlog::sinks_init_list{rotating_sink}, 
-//       spdlog::thread_pool(), spdlog::async_overflow_policy::block);
-//     logger->set_level(spdlog::level::trace);
-//     spdlog::register_logger(logger);
-
-//     return logger;
-//   }()); 
-
-//   logger.get(logger_id::config)->info(
-//     utility::formatter<messagecode::config>::format(
-//       messagecode::config::logging_ready,
-//       log_file.string()
-//   ));
-// }
 
 auto drop_clone::sync() -> void {
   // ! catch any exception in this member
