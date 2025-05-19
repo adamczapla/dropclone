@@ -61,13 +61,23 @@ struct transaction {
   static constexpr auto unrecovered_entries     = "transaction_error.003";
   static constexpr auto unrecovered_file        = "transaction_error.004";
   static constexpr auto unrecovered_directory   = "transaction_error.005";
+  static constexpr auto transaction_failed      = "transaction_error.006";
 
   static inline std::unordered_map<std::string_view, std::string_view> const messages{
     {start_failed, "transaction failed and was rolled back |\n↳ origin error:\n\t↳ {}"},
     {rollback_failed, "rollback failed – system may be inconsistent |\n↳ origin error:\n\t↳ {}"},
     {unrecovered_entries, "Unrecovered entries remain in snapshot '{}'"},
     {unrecovered_file, "Unrecovered file: '{}'"},
-    {unrecovered_directory, "Unrecovered directory: '{}'"}
+    {unrecovered_directory, "Unrecovered directory: '{}'"},
+    {transaction_failed, "Transaction failed during '{}' operation. Reason: {}"}
+  };
+};
+
+struct sync {
+  static constexpr auto sync_failed = "sync_error.001";
+
+  static inline std::unordered_map<std::string_view, std::string_view> const messages{
+    {sync_failed, "Sync operation failed: {}"}
   };
 };
 
