@@ -20,6 +20,7 @@
 namespace dropclone {
 
 namespace rng = std::ranges;
+namespace dc = dropclone;
 
 drop_clone::drop_clone(fs::path config_path, config_parser parser) { 
   try {
@@ -127,10 +128,35 @@ auto drop_clone::init_sync_logger() -> void {
 }
 
 auto drop_clone::sync() -> void {
-  // ! catch any exception in this member
-  rng::for_each(managers_, [&](auto& clone_manager) { 
-    clone_manager.sync(); 
-  });
+  try {
+    rng::for_each(managers_, [&](auto& clone_manager) { 
+      try {
+        clone_manager.sync(); 
+      } catch (dc::exception const& err) {
+        logger.get(logger_id::sync)->error(
+          utility::formatter<errorcode::sync>::format(
+            errorcode::sync::sync_failed, 
+            err.what()
+        ));
+      }
+    });
+  } catch (std::exception const& e) {
+      logger.get(logger_id::config)->error(
+        utility::formatter<errorcode::system>::format(
+          errorcode::system::unhandled_std_exception, e.what()
+      ));
+      throw_exception<errorcode::system>(
+        errorcode::system::unhandled_std_exception, e.what() 
+      );
+  } catch (...) {
+    logger.get(logger_id::config)->error(
+      utility::formatter<errorcode::system>::format(
+        errorcode::system::unknown_fatal_error
+    ));
+    throw_exception<errorcode::system>(
+      errorcode::system::unknown_fatal_error
+    );
+  }
 }
   
 } // namespace dropclone

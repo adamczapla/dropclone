@@ -1,6 +1,8 @@
 #include <dropclone/clone_manager.hpp>
 #include <dropclone/clone_config.hpp>
 #include <dropclone/path_snapshot.hpp>
+#include <dropclone/errorcode.hpp>
+#include <dropclone/utility.hpp>
 #include <dropclone/exception.hpp>
 #include <dropclone/clone_transaction.hpp>
 #include <dropclone/logger_manager.hpp>
@@ -61,7 +63,10 @@ auto clone_manager::copy(path_snapshot const& source_snapshot, fs::path const& d
   try {
     copy_transaction.start();
   } catch (dropclone::exception const& err) {
-    //
+    throw_exception<errorcode::transaction>(
+      errorcode::transaction::transaction_failed, 
+      "clone_manager::copy", err.what()
+    );
   }
 
   logger.get(logger_id::sync)->flush();
@@ -86,7 +91,10 @@ auto clone_manager::remove(path_snapshot const& source_snapshot, fs::path const&
   try {
     move_transaction.start();
   } catch (dropclone::exception const& err) {
-    //
+    throw_exception<errorcode::transaction>(
+      errorcode::transaction::transaction_failed, 
+      "clone_manager::remove", err.what()
+    );
   }
 }
 
@@ -115,35 +123,30 @@ auto clone_manager::move(path_snapshot const& source_snapshot, fs::path const& d
   try {
     remove_transaction.start();
   } catch (dropclone::exception const& err) {
-    //
-  }
-
-}
-
-auto clone_manager::sync() -> void {
-  try {
-    auto current_source_snapshot = path_snapshot{source_snapshot_.root()};
-    current_source_snapshot.make([&](fs::path const& path) { return entry_.filter(path); });
-
-    if(source_snapshot_.hash() == current_source_snapshot.hash()) { return; }
-
-    auto diff_snapshot_update = current_source_snapshot.local_diff(source_snapshot_);
-
-    if (entry_.mode == clone_mode::copy) { 
-      copy(diff_snapshot_update, entry_.destination_directory);
-      auto diff_snapshot_remove = source_snapshot_.local_diff(current_source_snapshot);
-      remove(diff_snapshot_remove, entry_.destination_directory); 
-    } else if (entry_.mode == clone_mode::move) {
-      move(diff_snapshot_update, entry_.destination_directory);
-    }
-
-    source_snapshot_ = std::move(current_source_snapshot);
-  } catch (dc::exception const& e) {
-    logger.get(logger_id::sync)->error(
-      e.what()
+    throw_exception<errorcode::transaction>(
+      errorcode::transaction::transaction_failed, 
+      "clone_manager::move", err.what()
     );
   }
 }
 
-} // dropclone
+auto clone_manager::sync() -> void {
+  auto current_source_snapshot = path_snapshot{source_snapshot_.root()};
+  current_source_snapshot.make([&](fs::path const& path) { return entry_.filter(path); });
 
+  if(source_snapshot_.hash() == current_source_snapshot.hash()) { return; }
+
+  auto diff_snapshot_update = current_source_snapshot.local_diff(source_snapshot_);
+
+  if (entry_.mode == clone_mode::copy) { 
+    copy(diff_snapshot_update, entry_.destination_directory);
+    auto diff_snapshot_remove = source_snapshot_.local_diff(current_source_snapshot);
+    remove(diff_snapshot_remove, entry_.destination_directory); 
+  } else if (entry_.mode == clone_mode::move) {
+    move(diff_snapshot_update, entry_.destination_directory);
+  }
+
+  source_snapshot_ = std::move(current_source_snapshot);
+}
+
+} // dropclone
