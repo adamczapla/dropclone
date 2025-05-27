@@ -111,8 +111,14 @@ auto copy_files(path_snapshot::snapshot_entries& files,
                 bool extract_on_success, 
                 fs::copy_options options) -> void {
   rng::for_each(files, [&](auto const& entry) {
-    if (auto const to_path = destination_root / entry.first; 
-        !fs::exists(to_path)) {
+    auto const to_path = destination_root / entry.first; 
+
+    bool const not_exists = (options == fs::copy_options::none) && !fs::exists(to_path);
+    bool const is_overwrite = (options & fs::copy_options::overwrite_existing) != fs::copy_options::none;
+    bool const is_update = (options & fs::copy_options::update_existing) != fs::copy_options::none;
+    bool const is_skip = (options & fs::copy_options::skip_existing) != fs::copy_options::none;
+
+    if (!is_skip && (not_exists || is_overwrite || is_update)) {
       auto const from_path = source_root / entry.first; 
 
       logger.get(logger_id::sync)->info(
