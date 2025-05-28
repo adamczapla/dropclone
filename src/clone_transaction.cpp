@@ -136,6 +136,38 @@ auto copy_files(path_snapshot::snapshot_entries& files,
   });
 }
 
+auto copy_duplicate(path_snapshot::snapshot_entries& files, 
+                    fs::path const& source_root, 
+                    fs::path const& destination_root) -> void {
+  auto const files_copy = files; // copy because original modified in loop
+  rng::for_each(files_copy, [&](auto const& entry) {
+    auto file_name = entry.first.filename();
+    auto const stem = file_name.stem().string(); 
+    auto const extension = file_name.extension().string();
+
+    auto to_path = destination_root / entry.first;
+    auto const file_parent_path = entry.first.parent_path();
+
+    for (auto num{1}; fs::exists(to_path); ++num) {
+      file_name = fs::path{stem + "_" + std::to_string(num) + extension};
+      to_path = destination_root / file_parent_path / file_name;
+    }
+
+    auto const from_path = source_root / entry.first; 
+
+    logger.get(logger_id::sync)->info(
+      utility::formatter<messagecode::command>::format(
+        messagecode::command::copy_file, 
+        from_path.string(), 
+        to_path.string()
+    ));
+
+    fs::copy(from_path, to_path);
+
+    files.try_emplace(file_parent_path / file_name, entry.second);
+  });
+}
+
 auto rename_files(path_snapshot::snapshot_entries& files, 
                   fs::path const& source_root, 
                   fs::path const& destination_root,
@@ -284,7 +316,11 @@ auto copy_command::execute() -> void {
   command_base::execute("copy_command", errorcode::command::copy_command_failed, 
     [&] {
       create_directories(snapshot_.directories(), destination_root_);
-      copy_files(snapshot_.files(), snapshot_.root(), destination_root_);
+      if (behavior_policy_ == behavior_policies::none) {
+        copy_files(snapshot_.files(), snapshot_.root(), destination_root_);
+      } else if (behavior_policy_ == behavior_policies::duplicate) { 
+        copy_duplicate(snapshot_.files(), snapshot_.root(), destination_root_);
+      }
     }
   );
 }
