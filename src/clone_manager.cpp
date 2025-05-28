@@ -111,7 +111,7 @@ auto clone_manager::move(path_snapshot const& source_snapshot, fs::path const& d
   path_snapshot added_paths{source_snapshot.root()};
   added_paths.add_files(source_snapshot.files(), filter_added_path);
   added_paths.add_directories(source_snapshot.directories(), filter_added_path);
-  copy_command copy_added_paths{added_paths, destination_root};
+  copy_command copy_added_paths{added_paths, destination_root, behavior_policies::duplicate};
 
   rng::for_each(added_paths.directories(), [](auto& directory) {
     directory.second.path_status = path_info::status::structurally_required;
