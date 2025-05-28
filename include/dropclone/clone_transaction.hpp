@@ -44,11 +44,13 @@ class command_base {
 
 auto command_base::has_data() const noexcept -> bool { return snapshot_.has_data(); }
 
+enum class behavior_policies { none, duplicate };
+
 class copy_command : public command_base {
  public:
-  copy_command(path_snapshot snapshot, fs::path destination_root) 
-    : command_base{std::move(snapshot)}, 
-      destination_root_{std::move(destination_root)} 
+  copy_command(path_snapshot snapshot, fs::path destination_root, behavior_policies behavior_policy = {}) 
+    : command_base{std::move(snapshot)}, destination_root_{std::move(destination_root)},
+      behavior_policy_{behavior_policy}
   {}
 
   auto execute() -> void;
@@ -56,6 +58,7 @@ class copy_command : public command_base {
 
  private:
   fs::path destination_root_;
+  behavior_policies behavior_policy_;
 };
 
 class rename_command : public command_base {
@@ -127,6 +130,10 @@ auto copy_files(path_snapshot::snapshot_entries& files,
                 fs::path const& destination_root,
                 bool extract_on_success = false, 
                 fs::copy_options options = {}) -> void;
+
+auto copy_duplicate(path_snapshot::snapshot_entries& files, 
+                fs::path const& source_root, 
+                fs::path const& destination_root) -> void;
 
 auto rename_files(path_snapshot::snapshot_entries& files, 
                   fs::path const& source_root, 
