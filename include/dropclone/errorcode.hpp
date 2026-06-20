@@ -110,5 +110,15 @@ struct test {
     {could_not_open_temporary_file, "cannot open temporary config file: {}"},
   };
 };
+
+struct cli {
+  static constexpr auto missing_config_file_argument = "cli_error.001";
+  static constexpr auto invalid_config_file_argument = "cli_error.002";
+
+  static inline std::unordered_map<std::string_view, std::string_view> const messages{
+    {missing_config_file_argument, "missing required argument '--config_file=<path>'"},
+    {invalid_config_file_argument, "expected '--config_file=<path>', got '{}'"}
+  };
+};
   
 } // namespace dropclone::errorcode
