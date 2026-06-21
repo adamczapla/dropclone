@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <csignal>
 #include <chrono>
+#include <string>
 #include <string_view>
 
 using dropclone::logger;
@@ -21,8 +22,8 @@ namespace dc = dropclone;
 
 namespace {
 
-  constexpr auto sync_interval_seconds{30};
-  std::atomic_bool running{true};
+constexpr auto sync_interval_seconds{30};
+std::atomic_bool running{true};
 
 auto get_config_path(int argc, char const *argv[]) -> fs::path {
   if (argc < 2) {
@@ -41,7 +42,7 @@ auto get_config_path(int argc, char const *argv[]) -> fs::path {
     );
   }
 
-  return arg.substr(param.size()+1);
+  return arg.substr(param.size() + 1);
 }
 
 auto register_signal_handler() -> void {
@@ -72,8 +73,8 @@ auto register_signal_handler() -> void {
 
 auto run_main(int argc, char const* argv[]) -> int {
   logger.get(logger_id::core)->info(
-  dc::utility::formatter<dc::messagecode::system>::format(
-    dc::messagecode::system::application_starting
+    dc::utility::formatter<dc::messagecode::system>::format(
+      dc::messagecode::system::application_starting
   ));
 
   try {
@@ -96,8 +97,8 @@ auto run_main(int argc, char const* argv[]) -> int {
   }
 
   logger.get(logger_id::core)->info(
-  dc::utility::formatter<dc::messagecode::system>::format(
-    dc::messagecode::system::application_terminating
+    dc::utility::formatter<dc::messagecode::system>::format(
+      dc::messagecode::system::application_terminating
   ));
 
   return EXIT_SUCCESS;
