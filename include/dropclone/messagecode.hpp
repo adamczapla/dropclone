@@ -44,5 +44,16 @@ struct command {
   };
 };
 
+struct system {
+  static constexpr auto application_starting            = "system_message.001";
+  static constexpr auto application_terminating         = "system_message.002";
+  static constexpr auto termination_requested_by_signal = "system_message.003";
+
+  static inline std::unordered_map<std::string_view, std::string_view> const messages{
+    {application_starting, "dropclone starting..."},
+    {application_terminating, "dropclone terminated."},
+    {termination_requested_by_signal, "Termination requested – dropclone will stop in at most {} seconds"}
+  };
+};
 
 } // namespace dropclone::messagecode

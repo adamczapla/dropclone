@@ -94,10 +94,12 @@ struct logger {
 struct system {
   static constexpr auto unhandled_std_exception = "system_error.001";
   static constexpr auto unknown_fatal_error     = "system_error.002";
+  static constexpr auto application_terminated     = "system_error.003";
 
   static inline std::unordered_map<std::string_view, std::string_view> const messages{
     {unhandled_std_exception, "Unhandled std::exception occurred |\n↳ origin error:\n\t↳ {}"},
-    {unknown_fatal_error, "Unknown fatal error occurred – possible internal crash or signal"}
+    {unknown_fatal_error, "Unknown fatal error occurred – possible internal crash or signal"},
+    {application_terminated, "dropclone terminated due to error |\n↳ origin error:\n\t↳ {}"}
   };
 };
 
@@ -117,8 +119,18 @@ struct cli {
 
   static inline std::unordered_map<std::string_view, std::string_view> const messages{
     {missing_config_file_argument, "missing required argument '--config_file=<path>'"},
-    {invalid_config_file_argument, "expected '--config_file=<path>', got '{}'"}
+    {invalid_config_file_argument, "expected '{}', got '{}'"}
   };
 };
-  
+
+struct signal {
+  static constexpr auto sigint_handler_registration_failed  = "signal_error.001";
+  static constexpr auto sigterm_handler_registration_failed = "signal_error.002";
+
+  static inline std::unordered_map<std::string_view, std::string_view> const messages{
+    {sigint_handler_registration_failed, "failed to register SIGINT handler"},
+    { sigterm_handler_registration_failed, "failed to register SIGTERM handler" }
+  };
+};
+
 } // namespace dropclone::errorcode
